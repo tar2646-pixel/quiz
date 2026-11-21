@@ -3162,8 +3162,10 @@ function makePad(cfg){
       }
       knob.className = "vjoy-knob" + (dx || dy ? " on" : "");
       emit(dx, dy);
+      /* اتجاه دقيق (تناظري) للألعاب التي تحتاجه، بين -1 و1 */
+      if(cfg.onVec){ var mag = Math.min(1, d / R); if(d < DEAD) cfg.onVec(0, 0, 0); else cfg.onVec(x / d, y / d, mag); }
     }
-    function release(){ tid = null; mouse = false; tf(knob, 0, 0, true); tf(base, 0, 0, true); knob.className = "vjoy-knob"; base.className = "vjoy"; emit(0, 0); }
+    function release(){ tid = null; mouse = false; tf(knob, 0, 0, true); tf(base, 0, 0, true); knob.className = "vjoy-knob"; base.className = "vjoy"; emit(0, 0); if(cfg.onVec) cfg.onVec(0, 0, 0); }
     function findT(list){ for(var i = 0; list && i < list.length; i++) if(list[i].identifier === tid) return list[i]; return null; }
     zoneFn = {
       ts:function(e){
@@ -3195,6 +3197,7 @@ function makePad(cfg){
     function recompute(){
       var dx = (held.r ? 1 : 0) - (held.l ? 1 : 0), dy = (held.d ? 1 : 0) - (held.u ? 1 : 0), n;
       for(n in keys) keys[n].className = "vkey" + (held[n] ? " on" : "");
+      if(cfg.onVec){ var vl = Math.sqrt(dx * dx + dy * dy); cfg.onVec(vl ? dx / vl : 0, vl ? dy / vl : 0, vl ? 1 : 0); }
       if(mode === "4"){
         dx = 0; dy = 0;
         for(var j = order.length - 1; j >= 0; j--){
@@ -5611,6 +5614,1943 @@ GAMES.push(
   options:[{key:"lv", label:"مستوى الصعوبة", choices:[["سهل - 5 نجوم وممرات واسعة",1],["متوسط - 4 نجوم",2],["صعب - 3 نجوم وممرات ضيقة",3]]}]}
 );
 /* [إضافة v11 - رسم المسار] نهاية
+   ===================================================================== */
+
+
+/* =====================================================================
+   [إضافة v14 - عشرون لعبة جديدة] بداية
+   تعليمية: إنسان حيوان نبات جماد، صحّح الجملة، خمّن الكلمة، الأعلام والعواصم، مختبر العناصر، أعواد الثقاب.
+   تفكير: 2048، سودوكو، فرز الألوان، توصيل البلاطات، توصيل الألوان، زحمة الموقف، ألغاز المكعبات، فك التشابك.
+   مهارة: عبور الطريق، دمج الفواكه، رجل الحبل، احتلال الأرض، الدودة الكبيرة، الانجراف.
+   لإزالتها: احذف كل ما بين سطر «بداية» وسطر «نهاية» هذا الجزء.
+   ===================================================================== */
+/* ---------- أدوات مشتركة للألعاب الجديدة ---------- */
+var LABG = [];
+function labReg(g){ LABG.push(g); }
+/* سحب موحّد (ماوس ولمس) عبر Pointer Events، مع بديل للمتصفحات القديمة */
+function ptr(target, down, move, up){
+  if(window.PointerEvent){
+    gListen(target, "pointerdown", function(e){ if(e.button && e.button !== 0) return; try{ target.setPointerCapture(e.pointerId); }catch(x){} if(e.preventDefault) e.preventDefault(); down(e); });
+    gListen(target, "pointermove", function(e){ if(move) move(e); });
+    gListen(target, "pointerup", function(e){ if(up) up(e); });
+    gListen(target, "pointercancel", function(e){ if(up) up(e); });
+  }else{
+    var on = false;
+    gListen(target, "mousedown", function(e){ on = true; down(e); });
+    gListen(document, "mousemove", function(e){ if(on && move) move(e); });
+    gListen(document, "mouseup", function(e){ if(on){ on = false; if(up) up(e); } });
+  }
+}
+/* سحب سريع بالإصبع على عنصر: يعيد الاتجاه (dx, dy) */
+function swipe(target, cb, tapCb){
+  var s = null;
+  ptr(target, function(e){ s = {x:e.clientX, y:e.clientY, t:now()}; }, null, function(e){
+    if(!s) return; var dx = e.clientX - s.x, dy = e.clientY - s.y, d = Math.max(Math.abs(dx), Math.abs(dy)); var st = s; s = null;
+    if(d < 24){ if(tapCb) tapCb(e, st); return; }
+    if(Math.abs(dx) > Math.abs(dy)) cb(dx > 0 ? 1 : -1, 0); else cb(0, dy > 0 ? 1 : -1);
+  });
+}
+/* توحيد الحروف العربية للمقارنة */
+function normAr(s){
+  return String(s).replace(/[ً-ْـ]/g, "").replace(/[أإآ]/g, "ا").replace(/ة/g, "ه").replace(/ى/g, "ي").replace(/ؤ/g, "و").replace(/ئ/g, "ي").replace(/\s+/g, " ").replace(/^\s+|\s+$/g, "");
+}
+function labCss(css){ var st = document.createElement("style"); st.appendChild(document.createTextNode(css)); document.getElementsByTagName("head")[0].appendChild(st); }
+function sv(inner){ return inner; }
+function roundRect(ctx, x, y, w, h, r){
+  ctx.beginPath(); ctx.moveTo(x + r, y); ctx.lineTo(x + w - r, y); ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r); ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h); ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r); ctx.lineTo(x, y + r); ctx.quadraticCurveTo(x, y, x + r, y); ctx.closePath();
+}
+function emo(ctx, ch, x, y, size){ ctx.font = size + "px 'Segoe UI Emoji','Apple Color Emoji','Noto Color Emoji',sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(ch, x, y); }
+labCss([
+".lb-wrap{max-width:820px;margin:0 auto;text-align:center}",
+".lb-big{font-size:30px;font-weight:bold;color:#ffc83d;margin:6px 0}",
+".lb-msg{min-height:30px;font-size:20px;font-weight:bold;color:#8dffb8;margin:6px 0}",
+".lb-row{display:flex;display:-webkit-flex;flex-wrap:wrap;-webkit-flex-wrap:wrap;justify-content:center;-webkit-justify-content:center}",
+".lb-btn{min-width:54px;min-height:50px;margin:4px;padding:6px 12px;border-radius:12px;border:2px solid rgba(255,255,255,.35);background:rgba(255,255,255,.12);color:#fff;font:bold 22px Tahoma,Arial,sans-serif;cursor:pointer;touch-action:manipulation}",
+".lb-btn:active{background:rgba(255,200,61,.35)}",
+".lb-btn.ok{background:#1fa855;border-color:#8dffb8}.lb-btn.no{background:#c0392b;border-color:#ff9b8f}.lb-btn.sel{background:#ffc83d;color:#2a1060;border-color:#fff}",
+".lb-btn.dim{opacity:.35}",
+".lb-card{background:rgba(255,255,255,.08);border:2px solid rgba(255,200,61,.3);border-radius:16px;padding:12px;margin:8px auto}",
+".lb-in{width:100%;box-sizing:border-box;font-size:22px;padding:8px 10px;border-radius:10px;border:2px solid #ffc83d;background:#fff;color:#2a1060;font-family:inherit;text-align:center}",
+".lb-in.ok{border-color:#1fa855;background:#e6ffef}.lb-in.half{border-color:#d99a00;background:#fff6d6}.lb-in.no{border-color:#c0392b;background:#ffe9e6}",
+"table.lb-t{width:100%;border-collapse:collapse;font-size:17px;margin-top:6px}table.lb-t td,table.lb-t th{border:1px solid rgba(255,255,255,.2);padding:5px}table.lb-t th{color:#ffc83d}",
+".lb-tok{display:inline-block;margin:4px;padding:6px 10px;border-radius:10px;background:rgba(255,255,255,.1);border:2px solid transparent;font-size:26px;cursor:pointer;touch-action:manipulation}",
+".lb-tok.bad{background:#c0392b;border-color:#ff9b8f}.lb-tok.good{background:#1fa855;border-color:#8dffb8}.lb-tok.miss{border-color:#ffc83d}"
+].join("\n"));
+
+/* =====================================================================
+   1) إنسان حيوان نبات جماد بلاد
+   ===================================================================== */
+var HR_CATS = ["إنسان", "حيوان", "نبات", "جماد", "بلاد"];
+var HR_DICT = {
+"ا":["أحمد،إبراهيم،أمل،أسماء،أنس،إياد،أيمن","أسد،أرنب،إوزة،أفعى،أخطبوط","أرز،أناناس،إجاص،أقحوان،أراك","إبريق،إبرة،أريكة،إطار،أسورة","الأردن،الإمارات،إيطاليا،إسبانيا،أمريكا،ألمانيا،إندونيسيا،أستراليا،إيران،أبها"],
+"ب":["بدر،باسم،بشرى،بلال،بسمة،بندر","بقرة،بطة،بومة،ببغاء،بعوضة،بغل","برتقال،بطيخ،بصل،بقدونس،بازلاء،بلح،بندورة","باب،بيت،برج،بالون،بطانية،برميل","البحرين،بريطانيا،البرازيل،باكستان،بلجيكا،بغداد،بيروت"],
+"ت":["تامر،تركي،تسنيم،تيماء،تهاني","تمساح،تيس،تونة،تمير","تفاح،توت،تين،تمر،ترمس","تلفاز،تاج،ترس،تمثال،تخت","تونس،تركيا،تشاد،تايلاند،تبوك،تعز"],
+"ج":["جمال،جميلة،جابر،جواد،جنى،جود","جمل،جاموس،جرادة،جرو،جراد","جزر،جرجير،جوز،جوافة","جدار،جرس،جسر،جوال،جرة","الجزائر،جيبوتي،جامايكا،جورجيا،جدة،جازان"],
+"ح":["حسن،حمد،حنان،حامد،حلا،حسين","حصان،حمار،حمامة،حوت،حرباء،حلزون","حمص،حنطة،حبق،حنظل،حلبة","حجر،حقيبة،حذاء،حاسوب،حبل،حائط","حلب،حمص،حائل،حماة،حضرموت"],
+"خ":["خالد،خديجة،خليل،خلود،خلف","خروف،خنفساء،خفاش،خيل،خنزير","خوخ،خيار،خس،خردل،خزامى،خبيزة","خاتم،خيمة،خزانة،خريطة،خشبة","الخرطوم،خميس مشيط،الخبر،الخليل"],
+"د":["داود،دانة،ديما،دعاء،دلال","دب،دجاجة،دلفين،ديك،دودة","دراق،دخن،دوار الشمس،دباء","دفتر،دولاب،درج،دلو،دبوس","الدنمارك،دبي،دمشق،الدوحة،الدمام"],
+"ر":["راشد،رنا،ريم،رائد،رهف،رامي","راكون،رنة،رتيلاء،رخم","رمان،ريحان،رز،رجلة","رف،رمح،رداء،رسالة،رادار","روسيا،رومانيا،الرياض،الرباط،رام الله"],
+"ز":["زياد،زينب،زيد،زهرة،زكريا","زرافة،زرزور،زنبور،زاغ","زيتون،زعتر،زنجبيل،زهرة،زعفران","زجاجة،زر،زورق،زهرية،زنبرك","زامبيا،زيمبابوي،الزلفي،الزرقاء"],
+"س":["سعد،سارة،سلمان،سلمى،سامي،سعاد","سلحفاة،سنجاب،سمكة،سنونو،سحلية،سمان","سفرجل،سبانخ،سمسم،سدر،سنبلة","سيارة،ساعة،سرير،سكين،سلم،سجادة","السعودية،السودان،سوريا،السويد،سنغافورة،سيئول"],
+"ش":["شهد،شادي،شريف،شيماء،شذى","شبل،شاة،شمبانزي،شاهين،شحرور","شعير،شمام،شمندر،شجرة،شوفان","شمعة،شباك،شنطة،شاشة،شوكة","الشارقة،شنغهاي،شيكاغو،الشام"],
+"ص":["صالح،صفاء،صقر،صبا،صفية","صقر،صرصور،صوص،صدفة","صنوبر،صبار،صفصاف،صعتر","صحن،صندوق،صخرة،صاروخ،صنبور","الصين،الصومال،صنعاء،صربيا،صفاقس"],
+"ط":["طارق،طلال،طيبة،طه،طلحة","طاووس،طائر،طيطوى","طماطم،طلح،طرخون","طاولة،طائرة،طبق،طوب،طبل","طرابلس،الطائف،طوكيو،طنجة،طهران"],
+"ع":["علي،عمر،عائشة،عبير،عادل،عبدالله","عصفور،عقاب،عنكبوت،عنزة،عقرب،عجل","عنب،عدس،عباد الشمس،عرعر،علف","علبة،عجلة،عصا،عمود،عربة","عمان،العراق،عدن،العين،عجمان"],
+"غ":["غادة،غازي،غدير،غسان،غالية","غزال،غراب،غوريلا،غنم،غرير","غاف،غار،غرقد","غسالة،غطاء،غربال،غليون","غزة،غانا،غينيا،غرناطة"],
+"ف":["فهد،فاطمة،فيصل،فرح،فارس","فيل،فأر،فراشة،فهد،فرس،فقمة","فراولة،فلفل،فول،فجل،فستق","فنجان،فرشاة،فانوس،فأس،فرن","فرنسا،فلسطين،فنلندا،الفلبين،فاس"],
+"ق":["قاسم،قمر،قيس،قصي","قرد،قطة،قنفذ،قرش،قندس،قبرة","قمح،قرع،قرنفل،قرفة،قطن","قلم،قارب،قميص،قفل،قدر،قنينة","قطر،القاهرة،القدس،قبرص،القصيم"],
+"ك":["كريم،كمال،كوثر،كنان","كلب،كنغر،كركدن،كوالا،كتكوت،كبش","كرز،كوسة،كمثرى،كرنب،كزبرة،كمون","كرسي،كتاب،كأس،كرة،كوب،كيس","الكويت،كندا،كوريا،كينيا،كربلاء"],
+"ل":["ليلى،لؤي،لمى،لينا،لبنى","لقلق،لاما،لبؤة،لاحم","ليمون،لوز،لفت،لبلاب،لوبيا","لوح،لعبة،لمبة،لحاف،لاصق","لبنان،ليبيا،لندن،لاهور"],
+"م":["محمد،مريم،منى،ماجد،مها","ماعز،مها،ميمون،مالك الحزين","موز،مشمش،مانجو،ملوخية،ميرمية","مسطرة،مفتاح،مقص،ملعقة،مروحة،مرآة","مصر،المغرب،ماليزيا،مكة،المدينة،مسقط"],
+"ن":["نورة،نايف،نادر،نجلاء،نوف","نمر،نحلة،نسر،نملة،نعامة،نورس","نخلة،نعناع،نرجس،نبق","نافذة،نظارة،نعال،نقود","النرويج،نيجيريا،النمسا،نجران،نابلس"],
+"ه":["هند،هشام،هيفاء،هادي،هالة","هدهد،هر،هامستر،هرة","هيل،هندباء،هليون","هاتف،هرم،هدية،هوائي","الهند،هولندا،هونغ كونغ،الهفوف"],
+"و":["وليد،وفاء،وائل،وعد،وداد","وعل،وطواط،وزغ،وحيد القرن،ورل","ورد،وردة،ورق العنب","وسادة،وعاء،ورقة،وشاح","واشنطن،الولايات المتحدة،وهران،الوجه"],
+"ي":["يوسف،ياسر،يارا،يحيى،يزيد","يمامة،يعسوب،يربوع،يرقة","ياسمين،يقطين،يانسون،يوسفي","يخت،ياقوتة،يافطة","اليمن،اليابان،اليونان،ينبع"]
+};
+var HR_LETTERS = []; (function(){ for(var k in HR_DICT) HR_LETTERS.push(k); })();
+function hrNorm(w){ var raw = String(w).replace(/^\s+/, ""), strip = raw.indexOf("ال") === 0; w = normAr(raw).replace(/ /g, ""); if(strip && w.length > 3) w = w.substring(2); return w; }
+function hrFirst(w){ w = hrNorm(w); var c = w.charAt(0); return c === "أ" || c === "إ" || c === "آ" ? "ا" : c; }
+function hrWords(letter, cat){ return HR_DICT[letter][cat].split("،"); }
+function hrInDict(letter, cat, w){
+  var n = hrNorm(w), list = hrWords(letter, cat), i;
+  for(i = 0; i < list.length; i++) if(hrNorm(list[i]) === n) return true;
+  /* قبول الكلمة من أي حرف آخر في نفس الصنف (قاموس أكبر) */
+  for(var k in HR_DICT){ list = hrWords(k, cat); for(i = 0; i < list.length; i++) if(hrNorm(list[i]) === n) return true; }
+  return false;
+}
+function hroofStart(o){
+  var L = o.lv, ROUNDS = 5, TIME = [0, 90, 70, 50][L], CPU = [0, 0.45, 0.65, 0.85][L];
+  var root = $("gstage"), wrap = el("div", "lb-wrap"), round = 0, score = 0, cpuScore = 0, used = {}, letter = "", endAt = 0, phase = "", inputs = [];
+  root.appendChild(wrap);
+  function hud(){
+    setHud(chip("الجولة", Math.min(round, ROUNDS) + "/" + ROUNDS) + chip("نقاطك", score) + chip("الحاسوب", cpuScore) +
+      (phase === "type" ? chip("الوقت", fmt(Math.max(0, (endAt - now()) / 1000))) : ""), true);
+  }
+  function spin(){
+    clearKids(wrap); round++; phase = "spin";
+    var big = el("div", "lb-big", ""); big.style.fontSize = "90px"; wrap.appendChild(big);
+    wrap.appendChild(el("div", "lb-msg", "اختيار الحرف..."));
+    var n = 0, pool = [], i;
+    for(i = 0; i < HR_LETTERS.length; i++) if(!used[HR_LETTERS[i]]) pool.push(HR_LETTERS[i]);
+    letter = pick(pool); used[letter] = 1;
+    var iv = gInterval(function(){
+      n++; setText(big, n < 14 ? pick(HR_LETTERS) : letter); beep(300 + n * 30, 40);
+      if(n >= 14){ clearInterval(iv); gTimeout(typePhase, 500); }
+    }, 90);
+    hud();
+  }
+  function typePhase(){
+    clearKids(wrap); phase = "type"; endAt = now() + TIME * 1000; inputs = [];
+    var big = el("div", "lb-big", "الحرف: " + letter); big.style.fontSize = "46px"; wrap.appendChild(big);
+    wrap.appendChild(el("div", "lb-msg", "اكتب كلمة تبدأ بحرف «" + letter + "» في كل خانة"));
+    var card = el("div", "lb-card"), i;
+    for(i = 0; i < HR_CATS.length; i++){
+      var row = el("div"); row.style.margin = "6px 0";
+      var lab = el("div", null, HR_CATS[i]); lab.style.cssText = "color:#ffe08a;font-weight:bold;font-size:19px;text-align:right;margin-bottom:2px";
+      var inp = document.createElement("input"); inp.className = "lb-in"; inp.type = "text"; inp.setAttribute("autocomplete", "off"); inp.dir = "rtl";
+      row.appendChild(lab); row.appendChild(inp); card.appendChild(row); inputs.push(inp);
+    }
+    wrap.appendChild(card);
+    wrap.appendChild(mkbtn("انتهيت!", "btn", check));
+    hud();
+  }
+  function check(){
+    if(phase !== "type") return; phase = "check";
+    var t = document.createElement("table"); t.className = "lb-t";
+    t.innerHTML = "<tr><th>الصنف</th><th>كلمتك</th><th>الحاسوب</th><th>نقاطك</th></tr>";
+    var i, gained = 0, cg = 0;
+    for(i = 0; i < HR_CATS.length; i++){
+      var w = trim(inputs[i].value), cw = Math.random() < CPU ? pick(hrWords(letter, i)) : "", p = 0, cp = 0, note = "";
+      var okL = w && hrFirst(w) === letter;
+      if(w && okL){ if(hrInDict(letter, i, w)){ p = 10; } else { p = 5; note = " (ليست في قاموسنا)"; } }
+      else if(w) note = " (لا تبدأ بالحرف)";
+      if(cw) cp = 10;
+      if(p === 10 && cp && hrNorm(cw) === hrNorm(w)){ p = 5; cp = 5; }
+      gained += p; cg += cp;
+      inputs[i].className = "lb-in " + (p === 10 ? "ok" : p === 5 ? "half" : "no");
+      var tr = document.createElement("tr");
+      tr.innerHTML = "<td></td><td></td><td></td><td></td>";
+      setText(tr.childNodes[0], HR_CATS[i]); setText(tr.childNodes[1], (w || "—") + note); setText(tr.childNodes[2], cw || "—"); setText(tr.childNodes[3], "+" + p);
+      tr.childNodes[3].style.color = p === 10 ? "#8dffb8" : p ? "#ffe08a" : "#ff9b8f";
+      t.appendChild(tr);
+    }
+    score += gained; cpuScore += cg;
+    clearKids(wrap);
+    wrap.appendChild(el("div", "lb-big", "حرف «" + letter + "»: +" + gained + " لك، +" + cg + " للحاسوب"));
+    var c = el("div", "lb-card"); c.appendChild(t); wrap.appendChild(c);
+    beep(gained >= cg ? 760 : 300, 160);
+    if(round >= ROUNDS){
+      var win = score > cpuScore ? "فزت على الحاسوب!" : score === cpuScore ? "تعادل!" : "فاز الحاسوب هذه المرة";
+      wrap.appendChild(el("div", "lb-msg", win));
+      wrap.appendChild(mkbtn("عرض النتيجة", "btn", finish));
+    }else wrap.appendChild(mkbtn("الجولة التالية", "btn", spin));
+    hud();
+  }
+  function finish(){ endGame(score + (score > cpuScore ? 50 : 0), "نقاطك: " + score + " | الحاسوب: " + cpuScore + (score > cpuScore ? " | مكافأة الفوز +50" : "")); }
+  gInterval(function(){ hud(); if(phase === "type" && now() >= endAt) check(); }, 300);
+  G.finishFn = finish;
+  spin();
+}
+labReg({id:"hroof", name:"إنسان حيوان نبات جماد", tag:"تعليمية", sd:"حرف واحد وخمس كلمات ضد الحاسوب", start:hroofStart,
+  icon:'<rect x="4" y="4" width="56" height="56" rx="12" fill="#5a4a8a"/><text x="32" y="44" font-size="34" font-weight="bold" fill="#ffc83d" text-anchor="middle" font-family="Tahoma">ح</text><circle cx="52" cy="12" r="7" fill="#8dffb8"/>',
+  desc:"تظهر لك حروف عشوائياً، واكتب لكل حرف إنساناً وحيواناً ونباتاً وجماداً وبلداً تبدأ به، وتنافس الحاسوب.",
+  instr:["في كل جولة يُختار حرف عشوائي، فاكتب في كل خانة كلمة تبدأ بهذا الحرف (إنسان، حيوان، نبات، جماد، بلاد أو مدينة).",
+         "اضغط «انتهيت!» قبل انتهاء الوقت، ثم تظهر كلماتك وكلمات الحاسوب.",
+         "الكلمة الصحيحة الموجودة في قاموس اللعبة +10، والكلمة التي تبدأ بالحرف لكنها ليست في القاموس +5، وإذا تشابهت كلمتك مع كلمة الحاسوب فلكلٍّ منكما +5.",
+         "اللعبة 5 جولات، وإذا فزت على الحاسوب تحصل على مكافأة 50 نقطة."],
+  options:[{key:"lv", label:"مستوى الصعوبة", choices:[["سهل - 90 ثانية",1],["متوسط - 70 ثانية",2],["صعب - 50 ثانية وحاسوب أقوى",3]]}]});
+
+/* =====================================================================
+   2) صحّح الجملة
+   الكلمة الخطأ بين نجمتين، ثم الصواب، ثم خياران خاطئان
+   ===================================================================== */
+var TY_DATA = {
+1:[["ذهبتُ إلى *المدرسه* مبكراً.","المدرسة","المدرصة","المدرسا"],["قرأ أخي *قصه* جميلة.","قصة","قصا","كصة"],["*هاذا* كتابي الجديد.","هذا","هاذ","هذى"],
+   ["*ذالك* الرجل طبيب ماهر.","ذلك","ذلق","زلك"],["يحب أبي شرب *الشاى* بالنعناع.","الشاي","الشائ","الشاا"],["*مستشفا* المدينة كبير.","مستشفى","مستشفاء","مسطشفى"],
+   ["سافرنا إلى *مكه* المكرمة.","مكة","مكا","مكت"],["تلعب أختي *بالدميه* الجديدة.","بالدمية","بالدميا","بالضمية"],["كان الجو ماطراً *لاكن* المباراة استمرت.","لكن","لاكين","لكنن"],
+   ["*هاؤلاء* طلاب مجتهدون.","هؤلاء","هاؤلا","هؤلا"],["أكلتُ *تفاحه* حمراء.","تفاحة","تفاحا","طفاحة"],["*مشا* الولد إلى البيت.","مشى","مشاء","مشء"],
+   ["رمى اللاعب *الكره* بقوة.","الكرة","الكرت","الكراه"],["في *الحديقه* أشجار كثيرة.","الحديقة","الحديقا","الهديقة"],["*إمتحان* الرياضيات غداً.","امتحان","امتحن","امطحان"]],
+2:[["*سئل* المعلمُ سؤالاً صعباً.","سأل","ساءل","سأأل"],["حللتُ *مسأله* الحساب.","مسألة","مسالت","مسألت"],["تعلّم أخي *القرائة* بسرعة.","القراءة","القرأة","القراأة"],
+   ["في الغرفة *أشيائ* جميلة.","أشياء","أشيأ","اشياا"],["*إبتسم* الطفل لأمه.","ابتسم","إبتسمو","ابطسم"],["شاهدنا *السمائ* الصافية.","السماء","السمأ","السماا"],
+   ["أحب فصل *الشتائ* كثيراً.","الشتاء","الشتأ","الشتاا"],["*إستيقظ* أخي مبكراً.","استيقظ","استيقض","إسطيقظ"],["كتبتُ *رساله* لصديقي.","رسالة","رسالت","رصالة"],
+   ["*يسئل* الطالب معلمه.","يسأل","يساءل","يسأئل"],["رأينا *زئباً* في الغابة.","ذئباً","ذءباً","ذأباً"],["الماء *ظروري* للحياة.","ضروري","دروري","ضرورى"],
+   ["*أصدقاءي* يحبون الرياضة.","أصدقائي","اصدقاأي","أصدقائى"],["فاز *رأيس* الفريق بالجائزة.","رئيس","رءيس","رئييس"],["نصلي في *المسجت* كل جمعة.","المسجد","المصجد","المسجط"]],
+3:[["رأيتُ *المعلمون* في الساحة.","المعلمين","المعلمان","المعلمونا"],["كان الجوُّ *جميلٌ*.","جميلاً","جميلٍ","جميلُ"],["إنّ الطالبَ *مجتهداً*.","مجتهدٌ","مجتهدٍ","مجتهدِ"],
+   ["شاهدتُ *طائران* على الشجرة.","طائرين","طائرون","طائرانِ"],["لم *يذهبُ* أخي إلى السوق.","يذهبْ","يذهبٌ","يذهبٍ"],["لن *يتأخرُ* الطالبُ عن موعده.","يتأخرَ","يتأخرٌ","يتأخرٍ"],
+   ["*المسلمين* يصومون رمضان.","المسلمون","المسلمان","المسلمونا"],["أصبح الماءُ *باردٌ*.","بارداً","باردٍ","باردُ"],["سلّمتُ على *أبوك*.","أبيك","أبوكُ","أبوكٌ"],
+   ["إنّ *أخوك* مجتهد.","أخاك","أخوكٌ","أخوكُ"],["كتبتُ *ثلاثة* رسائل.","ثلاثَ","ثلاثه","ثلاثون"],["قرأتُ *خمس* كتب.","خمسةَ","خمسٌ","خمسه"],
+   ["*هذا* الطالبةُ متفوقة.","هذه","هاذه","هذان"],["الطالباتُ *ذهبوا* إلى المكتبة.","ذهبنَ","ذهبا","ذهبتما"],["كان الطلابُ *مسرورون* بالرحلة.","مسرورين","مسروران","مسرورونا"]]
+};
+function typoStart(o){
+  var L = o.lv, list = shuffle(TY_DATA[L].slice(0)).slice(0, 10), idx = 0, score = 0, ok = 0, bad = 0, streak = 0, t0 = 0, locked = false;
+  var root = $("gstage"), wrap = el("div", "lb-wrap");
+  var info = el("div", "lb-msg", ""), sent = el("div", "lb-card"), opts = el("div", "lb-row"), next = el("div");
+  sent.style.fontSize = "26px"; sent.style.lineHeight = "1.9";
+  wrap.appendChild(el("div", "lb-big", "اضغط على الكلمة الخطأ في الجملة")); wrap.appendChild(sent); wrap.appendChild(info); wrap.appendChild(opts); wrap.appendChild(next);
+  root.appendChild(wrap);
+  function hud(){ setHud(chip("الجملة", Math.min(idx + 1, list.length) + "/" + list.length) + chip("النقاط", score) + chip("صحيح", ok) + chip("أخطاء", bad), true); }
+  function show(){
+    clearKids(sent); clearKids(opts); clearKids(next); setText(info, ""); locked = false; t0 = now();
+    var d = list[idx], words = d[0].split(" "), i;
+    for(i = 0; i < words.length; i++){
+      (function(w){
+        var wrong = /^\*.*\*/.test(w), clean = w.replace(/\*/g, ""), tk = el("span", "lb-tok", clean);
+        tk._tail = wrong ? w.replace(/^\*.*\*/, "") : "";
+        tk.onclick = function(){ tap(tk, wrong, d); };
+        sent.appendChild(tk);
+      })(words[i]);
+    }
+    hud();
+  }
+  function tap(tk, wrong, d){
+    if(locked) return;
+    if(!wrong){ bad++; streak = 0; score = Math.max(0, score - 5); tk.className = "lb-tok miss"; setText(info, "هذه الكلمة صحيحة، ابحث عن غيرها (-5)"); info.style.color = "#ff9b8f"; beep(200, 160, "square"); hud(); return; }
+    locked = true; tk.className = "lb-tok bad"; beep(600, 60);
+    setText(info, "أحسنت! وجدت الخطأ (+5). اختر الصواب:"); info.style.color = "#8dffb8"; score += 5; hud();
+    var ch = shuffle([d[1], d[2], d[3]]), i;
+    for(i = 0; i < ch.length; i++){
+      (function(c){
+        var b = mkbtn(c, "lb-btn", function(){
+          if(!locked || opts._done) return; opts._done = true;
+          var right = c === d[1], secs = (now() - t0) / 1000;
+          if(right){
+            var pts = 10 + Math.max(0, Math.round(10 - secs)) + Math.min(streak, 5) * 2; score += pts; ok++; streak++;
+            b.className = "lb-btn ok"; tk.className = "lb-tok good"; setText(tk, d[1] + tk._tail);
+            setText(info, "صحيح! +" + pts); beep(760, 90); setTimeout(function(){ beep(990, 140); }, 90);
+          }else{
+            bad++; streak = 0; b.className = "lb-btn no"; setText(info, "الصواب: " + d[1]); info.style.color = "#ff9b8f"; beep(200, 250, "square");
+            var bs = opts.childNodes; for(var k = 0; k < bs.length; k++) if(bs[k]._v === d[1]) bs[k].className = "lb-btn ok";
+            setText(tk, d[1] + tk._tail); tk.className = "lb-tok good";
+          }
+          hud();
+          next.appendChild(mkbtn(idx + 1 >= list.length ? "عرض النتيجة" : "الجملة التالية", "btn", function(){ idx++; if(idx >= list.length) finish(); else { opts._done = false; show(); } }));
+        });
+        b._v = c; opts.appendChild(b);
+      })(ch[i]);
+    }
+  }
+  function finish(){ endGame(score, "صحّحت " + ok + " من " + list.length + " جمل | الأخطاء: " + bad); }
+  G.finishFn = finish;
+  show();
+}
+labReg({id:"typo", name:"صحّح الجملة", tag:"تعليمية", sd:"اكتشف الخطأ الإملائي أو النحوي", start:typoStart,
+  icon:'<rect x="4" y="14" width="56" height="36" rx="8" fill="#fff"/><path d="M12 30H52" stroke="#b8a6e8" stroke-width="4" stroke-linecap="round"/><path d="M26 22L40 38M40 22L26 38" stroke="#e74c3c" stroke-width="5" stroke-linecap="round"/><path d="M44 52L50 58L60 44" stroke="#1fa855" stroke-width="5" fill="none" stroke-linecap="round"/>',
+  desc:"في كل جملة كلمة واحدة فيها خطأ إملائي أو نحوي: اكتشفها ثم اختر صوابها.",
+  instr:["تظهر جملة فيها كلمة واحدة خاطئة: اضغط عليها.",
+         "إذا وجدتها تظهر ثلاثة خيارات، فاختر الكتابة الصحيحة.",
+         "اكتشاف الخطأ +5، واختيار الصواب +10 مع مكافأة السرعة والتتابع، والضغط على كلمة صحيحة يخصم 5.",
+         "السهل: التاء المربوطة والألف اللينة، المتوسط: الهمزات وأخطاء شائعة، الصعب: أخطاء نحوية في الإعراب."],
+  options:[{key:"lv", label:"المستوى", choices:[["سهل - إملاء",1],["متوسط - الهمزات",2],["صعب - نحو",3]]}]});
+
+/* =====================================================================
+   3) خمّن الكلمة (البالونات)
+   ===================================================================== */
+var HG_WORDS = {
+1:[["أسد","حيوان مفترس"],["قمر","يضيء في الليل"],["باب","ندخل منه البيت"],["قلم","نكتب به"],["شمس","نجم يضيء النهار"],["بحر","ماء مالح واسع"],["وردة","نبات له رائحة جميلة"],
+   ["سمكة","تعيش في الماء"],["بيت","نسكن فيه"],["كتاب","نقرأ فيه"],["فيل","أكبر حيوان بري"],["موز","فاكهة صفراء"],["نحلة","تصنع العسل"],["ساعة","تخبرنا بالوقت"],["جمل","سفينة الصحراء"]],
+2:[["مدرسة","مكان التعلم"],["حديقة","فيها أشجار وأزهار"],["طائرة","تطير في السماء"],["سيارة","وسيلة نقل لها أربع عجلات"],["برتقال","فاكهة غنية بفيتامين ج"],["زرافة","حيوان رقبته طويلة"],
+   ["فراشة","حشرة جميلة الأجنحة"],["مكتبة","مكان الكتب"],["حاسوب","جهاز إلكتروني"],["مستشفى","مكان علاج المرضى"],["عصفور","طائر صغير"],["مسطرة","نرسم بها خطاً مستقيماً"],
+   ["ملعقة","نأكل بها"],["شاطئ","حافة البحر"],["مظلة","تحمينا من المطر"]],
+3:[["بركان","جبل يخرج منه حمم"],["مجرة","مجموعة ضخمة من النجوم"],["ديناصور","حيوان منقرض"],["مغناطيس","يجذب الحديد"],["أخطبوط","له ثمانية أذرع"],["جغرافيا","علم دراسة الأرض"],
+   ["بطريق","طائر لا يطير يعيش في القطب"],["الكهرباء","طاقة تشغل الأجهزة"],["مجهر","نرى به الأشياء الدقيقة"],["الأهرامات","من عجائب الدنيا في مصر"],["تلسكوب","نرى به النجوم البعيدة"],
+   ["طاحونة","تطحن الحبوب"],["الرياضيات","علم الأرقام"],["المحيط","أكبر المسطحات المائية"],["قطبي","منطقة شديدة البرودة"]]
+};
+var HG_KEYS = "ا ب ت ث ج ح خ د ذ ر ز س ش ص ض ط ظ ع غ ف ق ك ل م ن ه و ي ة ء".split(" ");
+function hgKey(ch){ return ch.replace(/[أإآ]/, "ا").replace("ى", "ي").replace("ؤ", "و").replace("ئ", "ي"); }
+labCss(".hg-word{direction:rtl;display:flex;display:-webkit-flex;justify-content:center;-webkit-justify-content:center;flex-wrap:wrap;-webkit-flex-wrap:wrap;margin:10px 0}" +
+  ".hg-l{width:46px;height:54px;margin:3px;border-bottom:4px solid #ffc83d;font:bold 34px/54px Tahoma,Arial,sans-serif;color:#fff}" +
+  ".hg-l.show{color:#8dffb8}.hg-l.lose{color:#ff9b8f}" +
+  ".hg-sky{position:relative;height:130px;margin:4px auto;max-width:560px}" +
+  ".hg-b{position:absolute;bottom:20px;width:54px;height:66px;border-radius:50% 50% 48% 48%;transition:transform .35s,opacity .35s}" +
+  ".hg-b:after{content:'';position:absolute;left:26px;top:66px;width:2px;height:40px;background:rgba(255,255,255,.5)}" +
+  ".hg-b.pop{transform:scale(1.6);opacity:0}" +
+  ".hg-keys{direction:rtl;max-width:640px;margin:0 auto}.hg-keys .lb-btn{min-width:46px;min-height:46px;padding:2px 6px;font-size:22px}");
+function hangStart(o){
+  var L = o.lv, list = shuffle(HG_WORDS[L].slice(0)).slice(0, 8), idx = 0, score = 0, won = 0, lives = 7, word = "", got = {}, used = {}, over = false;
+  var COLS = ["#ff6b6b","#ffc83d","#4dd0e1","#8dffb8","#b48cff","#ff9b3d","#ff7ac8"];
+  var root = $("gstage"), wrap = el("div", "lb-wrap"), hint = el("div", "lb-msg"), sky = el("div", "hg-sky"), wd = el("div", "hg-word"), msg = el("div", "lb-msg"), keys = el("div", "hg-keys lb-row"), nx = el("div");
+  wrap.appendChild(hint); wrap.appendChild(sky); wrap.appendChild(wd); wrap.appendChild(msg); wrap.appendChild(keys); wrap.appendChild(nx); root.appendChild(wrap);
+  var balloons = [];
+  function hud(){ setHud(chip("الكلمة", Math.min(idx + 1, list.length) + "/" + list.length) + chip("النقاط", score) + chip("البالونات", lives), true); }
+  function newWord(){
+    over = false; lives = 7; got = {}; used = {}; word = list[idx][0]; clearKids(nx); setText(msg, "");
+    setText(hint, "التلميح: " + list[idx][1] + " (" + word.length + " حروف)");
+    clearKids(sky); balloons = [];
+    for(var i = 0; i < 7; i++){
+      var b = el("div", "hg-b"); b.style.left = (8 + i * 13) + "%"; b.style.background = "radial-gradient(circle at 35% 30%,#fff," + COLS[i] + " 45%)";
+      b.style.bottom = (20 + (i % 2) * 16) + "px"; sky.appendChild(b); balloons.push(b);
+    }
+    clearKids(keys);
+    for(i = 0; i < HG_KEYS.length; i++){
+      (function(k){ var kb = mkbtn(k, "lb-btn", function(){ guess(k, kb); }); kb._k = k; keys.appendChild(kb); })(HG_KEYS[i]);
+    }
+    render(); hud();
+  }
+  function render(reveal){
+    clearKids(wd);
+    for(var i = 0; i < word.length; i++){
+      var c = word.charAt(i), k = hgKey(c), sh = got[k];
+      wd.appendChild(el("div", "hg-l" + (sh ? " show" : reveal ? " lose" : ""), sh || reveal ? c : ""));
+    }
+  }
+  function solved(){ for(var i = 0; i < word.length; i++) if(!got[hgKey(word.charAt(i))]) return false; return true; }
+  function guess(k, kb){
+    if(over || used[k]) return; used[k] = true;
+    var hit = false, i; for(i = 0; i < word.length; i++) if(hgKey(word.charAt(i)) === k) hit = true;
+    if(hit){ got[k] = true; kb.className = "lb-btn ok"; beep(700, 60); }
+    else { kb.className = "lb-btn no"; lose(); }
+    render();
+    if(solved()) win();
+    hud();
+  }
+  function lose(){
+    lives--; var b = balloons[lives]; if(b) b.className = "hg-b pop"; beep(160, 180, "square");
+    if(lives <= 0){ over = true; render(true); setText(msg, "طارت البالونات! الكلمة: " + word); msg.style.color = "#ff9b8f"; nextBtn(); }
+  }
+  function win(){
+    over = true; won++; var pts = 10 + lives * 5; score += pts;
+    setText(msg, "أحسنت! +" + pts); msg.style.color = "#8dffb8"; beep(760, 100); setTimeout(function(){ beep(1020, 160); }, 100); nextBtn();
+  }
+  function nextBtn(){ nx.appendChild(mkbtn(idx + 1 >= list.length ? "عرض النتيجة" : "الكلمة التالية", "btn", function(){ idx++; if(idx >= list.length) finish(); else newWord(); })); hud(); }
+  nx.parentNode.insertBefore(mkbtn("تلميح: اكشف حرفاً (بالون واحد)", "btn small alt", function(){
+    if(over || lives <= 1) return;
+    var miss = []; for(var i = 0; i < word.length; i++){ var k = hgKey(word.charAt(i)); if(!got[k]) miss.push(k); }
+    if(!miss.length) return; var k2 = pick(miss), bs = keys.childNodes;
+    for(i = 0; i < bs.length; i++) if(bs[i]._k === k2){ used[k2] = false; lose(); guess(k2, bs[i]); break; }
+  }), nx);
+  function finish(){ endGame(score, "خمّنت " + won + " من " + list.length + " كلمات"); }
+  G.finishFn = finish;
+  newWord();
+}
+labReg({id:"hang", name:"خمّن الكلمة", tag:"تعليمية", sd:"احزر الكلمة قبل أن تطير البالونات", start:hangStart,
+  icon:'<ellipse cx="22" cy="22" rx="12" ry="15" fill="#ff6b6b"/><ellipse cx="42" cy="18" rx="12" ry="15" fill="#4dd0e1"/><path d="M22 37V52M42 33V52" stroke="#fff" stroke-width="2"/><rect x="8" y="50" width="48" height="10" rx="3" fill="#ffc83d"/>',
+  desc:"احزر حروف الكلمة المخفية مستعيناً بالتلميح، وكل حرف خاطئ يُطيّر بالوناً.",
+  instr:["اقرأ التلميح واعرف عدد حروف الكلمة، ثم اضغط على الحروف التي تظن أنها في الكلمة.",
+         "الحرف الصحيح يظهر في مكانه، والحرف الخاطئ يفجّر بالوناً. لديك 7 بالونات لكل كلمة.",
+         "الألف تشمل (أ إ آ)، والياء تشمل (ى ئ)، والواو تشمل (ؤ).",
+         "كل كلمة تحزرها +10 و+5 عن كل بالون باقٍ. زر التلميح يكشف حرفاً مقابل بالون واحد."],
+  options:[{key:"lv", label:"المستوى", choices:[["سهل - كلمات قصيرة",1],["متوسط",2],["صعب - كلمات طويلة",3]]}]});
+
+/* =====================================================================
+   4) الأعلام والعواصم (أعلام مرسومة SVG تعمل بلا إنترنت)
+   ===================================================================== */
+function fgStar(cx, cy, r, n, rot, fill){
+  n = n || 5; var p = [], i, a, rr; rot = rot || -Math.PI / 2;
+  for(i = 0; i < n * 2; i++){ a = rot + i * Math.PI / n; rr = i % 2 ? r * 0.42 : r; p.push((cx + Math.cos(a) * rr).toFixed(1) + "," + (cy + Math.sin(a) * rr).toFixed(1)); }
+  return '<polygon points="' + p.join(" ") + '" fill="' + fill + '"/>';
+}
+function fgH(){ var a = arguments, h = 60 / a.length, s = "", i; for(i = 0; i < a.length; i++) s += '<rect x="0" y="' + (i * h) + '" width="90" height="' + (h + 0.5) + '" fill="' + a[i] + '"/>'; return s; }
+function fgV(){ var a = arguments, w = 90 / a.length, s = "", i; for(i = 0; i < a.length; i++) s += '<rect x="' + (i * w) + '" y="0" width="' + (w + 0.5) + '" height="60" fill="' + a[i] + '"/>'; return s; }
+function fgCres(cx, cy, r, fg, bg, dx){ return '<circle cx="' + cx + '" cy="' + cy + '" r="' + r + '" fill="' + fg + '"/><circle cx="' + (cx + (dx || r * 0.3)) + '" cy="' + cy + '" r="' + (r * 0.8) + '" fill="' + bg + '"/>'; }
+function fgSerr(x, n, col){ var p = "0,0 " + x + ",0", h = 60 / n, i; for(i = 0; i < n; i++) p += " " + (x + 10) + "," + (i * h + h / 2) + " " + x + "," + ((i + 1) * h); return '<polygon points="' + p + " 0,60" + '" fill="' + col + '"/>'; }
+var FLAGS = [
+ ["sa","السعودية","الرياض",1,'<rect width="90" height="60" fill="#006c35"/><text x="45" y="30" font-size="11" fill="#fff" text-anchor="middle" font-family="Tahoma">لا إله إلا الله</text><path d="M24 42H66" stroke="#fff" stroke-width="3"/><path d="M62 39L68 42L62 45" fill="#fff"/>'],
+ ["ae","الإمارات","أبوظبي",1,fgH("#00732f","#fff","#000") + '<rect width="24" height="60" fill="#ff0000"/>'],
+ ["kw","الكويت","الكويت",1,fgH("#007a3d","#fff","#ce1126") + '<polygon points="0,0 22,20 22,40 0,60" fill="#000"/>'],
+ ["qa","قطر","الدوحة",1,'<rect width="90" height="60" fill="#8a1538"/>' + fgSerr(22, 9, "#fff")],
+ ["bh","البحرين","المنامة",1,'<rect width="90" height="60" fill="#ce1126"/>' + fgSerr(24, 5, "#fff")],
+ ["om","عُمان","مسقط",1,fgH("#fff","#db161b","#008000") + '<rect width="28" height="60" fill="#db161b"/>'],
+ ["ye","اليمن","صنعاء",1,fgH("#ce1126","#fff","#000")],
+ ["jo","الأردن","عمّان",1,fgH("#000","#fff","#007a3d") + '<polygon points="0,0 42,30 0,60" fill="#ce1126"/>' + fgStar(14, 30, 6, 7, 0, "#fff")],
+ ["eg","مصر","القاهرة",1,fgH("#ce1126","#fff","#000") + '<path d="M45 22L50 28L48 38H42L40 28Z" fill="#c09300"/>'],
+ ["iq","العراق","بغداد",1,fgH("#ce1126","#fff","#000") + '<text x="45" y="35" font-size="11" fill="#007a3d" text-anchor="middle" font-family="Tahoma" font-weight="bold">الله أكبر</text>'],
+ ["sy","سوريا","دمشق",1,fgH("#007a3d","#fff","#000") + fgStar(27, 30, 6, 5, 0, "#ce1126") + fgStar(45, 30, 6, 5, 0, "#ce1126") + fgStar(63, 30, 6, 5, 0, "#ce1126")],
+ ["lb","لبنان","بيروت",1,'<rect width="90" height="60" fill="#fff"/><rect width="90" height="15" fill="#ed1c24"/><rect y="45" width="90" height="15" fill="#ed1c24"/><polygon points="45,18 56,40 34,40" fill="#00a651"/><rect x="43" y="38" width="4" height="5" fill="#00a651"/>'],
+ ["ps","فلسطين","القدس",1,fgH("#000","#fff","#009736") + '<polygon points="0,0 34,30 0,60" fill="#ee2a35"/>'],
+ ["dz","الجزائر","الجزائر",1,fgV("#006233","#fff") + fgCres(45, 30, 13, "#d21034", "#fff", 4) + fgStar(50, 30, 5, 5, Math.PI, "#d21034")],
+ ["ma","المغرب","الرباط",1,'<rect width="90" height="60" fill="#c1272d"/><polygon points="45,16 49,28 61,28 51,35 55,47 45,40 35,47 39,35 29,28 41,28" fill="none" stroke="#006233" stroke-width="2.5"/>'],
+ ["tn","تونس","تونس",1,'<rect width="90" height="60" fill="#e70013"/><circle cx="45" cy="30" r="15" fill="#fff"/>' + fgCres(45, 30, 11, "#e70013", "#fff", 3) + fgStar(48, 30, 6, 5, Math.PI, "#e70013")],
+ ["ly","ليبيا","طرابلس",1,'<rect width="90" height="15" fill="#e70013"/><rect y="15" width="90" height="30" fill="#000"/><rect y="45" width="90" height="15" fill="#239e46"/>' + fgCres(43, 30, 9, "#fff", "#000", 3) + fgStar(50, 30, 4, 5, Math.PI, "#fff")],
+ ["sd","السودان","الخرطوم",1,fgH("#d21034","#fff","#000") + '<polygon points="0,0 30,30 0,60" fill="#007229"/>'],
+ ["mr","موريتانيا","نواكشوط",1,'<rect width="90" height="60" fill="#00a95c"/><rect width="90" height="9" fill="#d01c1f"/><rect y="51" width="90" height="9" fill="#d01c1f"/><path d="M30 26A15 15 0 0 0 60 26A15 12 0 0 1 30 26Z" fill="#ffd700"/>' + fgStar(45, 22, 6, 5, 0, "#ffd700")],
+ ["so","الصومال","مقديشو",1,'<rect width="90" height="60" fill="#4189dd"/>' + fgStar(45, 30, 13, 5, 0, "#fff")],
+ ["fr","فرنسا","باريس",0,fgV("#002395","#fff","#ed2939")],
+ ["de","ألمانيا","برلين",0,fgH("#000","#dd0000","#ffce00")],
+ ["it","إيطاليا","روما",0,fgV("#009246","#fff","#ce2b37")],
+ ["jp","اليابان","طوكيو",0,'<rect width="90" height="60" fill="#fff"/><circle cx="45" cy="30" r="17" fill="#bc002d"/>'],
+ ["cn","الصين","بكين",0,'<rect width="90" height="60" fill="#de2910"/>' + fgStar(16, 16, 9, 5, 0, "#ffde00") + fgStar(31, 7, 3, 5, 0, "#ffde00") + fgStar(36, 13, 3, 5, 0, "#ffde00") + fgStar(36, 21, 3, 5, 0, "#ffde00") + fgStar(31, 27, 3, 5, 0, "#ffde00")],
+ ["tr","تركيا","أنقرة",0,'<rect width="90" height="60" fill="#e30a17"/>' + fgCres(36, 30, 15, "#fff", "#e30a17", 4) + fgStar(52, 30, 7, 5, Math.PI, "#fff")],
+ ["br","البرازيل","برازيليا",0,'<rect width="90" height="60" fill="#009c3b"/><polygon points="45,6 84,30 45,54 6,30" fill="#ffdf00"/><circle cx="45" cy="30" r="12" fill="#002776"/><path d="M33 28Q45 24 57 32" stroke="#fff" stroke-width="2" fill="none"/>'],
+ ["in","الهند","نيودلهي",0,fgH("#ff9933","#fff","#138808") + '<circle cx="45" cy="30" r="7" fill="none" stroke="#000080" stroke-width="1.5"/><circle cx="45" cy="30" r="1.5" fill="#000080"/>'],
+ ["es","إسبانيا","مدريد",0,'<rect width="90" height="60" fill="#aa151b"/><rect y="15" width="90" height="30" fill="#f1bf00"/>'],
+ ["ru","روسيا","موسكو",0,fgH("#fff","#0039a6","#d52b1e")],
+ ["pk","باكستان","إسلام آباد",0,'<rect width="90" height="60" fill="#01411c"/><rect width="22" height="60" fill="#fff"/>' + fgCres(56, 30, 14, "#fff", "#01411c", -4) + fgStar(50, 24, 5, 5, -0.3, "#fff")],
+ ["id","إندونيسيا","جاكرتا",0,fgH("#ce1126","#fff")],
+ ["us","الولايات المتحدة","واشنطن",0,(function(){ var s = "", i; for(i = 0; i < 13; i++) s += '<rect y="' + (i * 60 / 13) + '" width="90" height="' + (60 / 13 + 0.3) + '" fill="' + (i % 2 ? "#fff" : "#b22234") + '"/>'; s += '<rect width="38" height="32" fill="#3c3b6e"/>'; for(i = 0; i < 20; i++) s += '<circle cx="' + (5 + (i % 5) * 7) + '" cy="' + (5 + Math.floor(i / 5) * 7.5) + '" r="1.3" fill="#fff"/>'; return s; })()],
+ ["gb","بريطانيا","لندن",0,'<rect width="90" height="60" fill="#012169"/><path d="M0 0L90 60M90 0L0 60" stroke="#fff" stroke-width="12"/><path d="M0 0L90 60M90 0L0 60" stroke="#c8102e" stroke-width="4"/><path d="M45 0V60M0 30H90" stroke="#fff" stroke-width="18"/><path d="M45 0V60M0 30H90" stroke="#c8102e" stroke-width="10"/>'],
+ ["ca","كندا","أوتاوا",0,fgV("#ff0000","#fff","#fff","#ff0000") + '<polygon points="45,12 49,22 56,19 53,31 59,30 54,38 47,37 47,48 43,48 43,37 36,38 31,30 37,31 34,19 41,22" fill="#ff0000"/>'],
+ ["ng","نيجيريا","أبوجا",0,fgV("#008751","#fff","#008751")],
+ ["ar","الأرجنتين","بوينس آيرس",0,fgH("#74acdf","#fff","#74acdf") + '<circle cx="45" cy="30" r="6" fill="#f6b40e"/>'],
+ ["kr","كوريا الجنوبية","سيول",0,'<rect width="90" height="60" fill="#fff"/><path d="M45 18A12 12 0 0 1 45 42A6 6 0 0 1 45 30A6 6 0 0 0 45 18Z" fill="#003478"/><path d="M45 18A12 12 0 0 0 45 42A6 6 0 0 0 45 30A6 6 0 0 1 45 18Z" fill="#c60c30"/><path d="M14 12L22 6M16 15L24 9M18 18L26 12M66 48L74 42M68 51L76 45M70 54L78 48M14 48L22 54M66 12L74 18" stroke="#000" stroke-width="2.5"/>'],
+ ["my","ماليزيا","كوالالمبور",0,(function(){ var s = "", i; for(i = 0; i < 14; i++) s += '<rect y="' + (i * 60 / 14) + '" width="90" height="' + (60 / 14 + 0.3) + '" fill="' + (i % 2 ? "#fff" : "#cc0001") + '"/>'; return s + '<rect width="45" height="34" fill="#010066"/>' + fgCres(18, 17, 11, "#fc0", "#010066", 4) + fgStar(33, 17, 7, 14, 0, "#fc0"); })()]
+];
+function flagSvg(f, w){ w = w || 180; return '<svg width="' + w + '" height="' + (w * 2 / 3) + '" viewBox="0 0 90 60" style="border-radius:6px;box-shadow:0 4px 14px rgba(0,0,0,.45);background:#fff">' + f[4] + '</svg>'; }
+function flagsStart(o){
+  var mode = o.mode, reg = o.reg, pool = [], i;
+  for(i = 0; i < FLAGS.length; i++) if(reg === "all" || (reg === "arab") === !!FLAGS[i][3]) pool.push(FLAGS[i]);
+  var qs = shuffle(pool.slice(0)).slice(0, 10), idx = 0, score = 0, ok = 0, streak = 0, t0 = 0, lock = false;
+  var root = $("gstage"), wrap = el("div", "lb-wrap"), q = el("div"), msg = el("div", "lb-msg"), opts = el("div", "lb-row"), nx = el("div");
+  q.style.minHeight = "130px"; wrap.appendChild(q); wrap.appendChild(msg); wrap.appendChild(opts); wrap.appendChild(nx); root.appendChild(wrap);
+  function hud(){ setHud(chip("السؤال", Math.min(idx + 1, qs.length) + "/" + qs.length) + chip("النقاط", score) + chip("صحيح", ok), true); }
+  function ask(){
+    lock = false; clearKids(opts); clearKids(nx); setText(msg, ""); t0 = now();
+    var f = qs[idx], others = shuffle(pool.filter(function(x){ return x !== f; })).slice(0, 3), ch = shuffle([f].concat(others));
+    if(mode === "f2c"){ q.innerHTML = '<div class="lb-big">ما اسم الدولة صاحبة هذا العلم؟</div>' + flagSvg(f); }
+    else if(mode === "c2k"){ q.innerHTML = '<div class="lb-big">ما عاصمة ' + f[1] + '؟</div>' + flagSvg(f, 120); }
+    else { q.innerHTML = '<div class="lb-big">ما عاصمة الدولة صاحبة هذا العلم؟</div>' + flagSvg(f); }
+    for(var k = 0; k < ch.length; k++){
+      (function(c){
+        var b = mkbtn(mode === "f2c" ? c[1] : c[2], "lb-btn", function(){
+          if(lock) return; lock = true;
+          if(c === f){ var pts = 10 + Math.max(0, Math.round(8 - (now() - t0) / 1000)) + Math.min(streak, 5); score += pts; ok++; streak++; b.className = "lb-btn ok"; setText(msg, "صحيح! +" + pts); msg.style.color = "#8dffb8"; beep(760, 90); }
+          else { streak = 0; b.className = "lb-btn no"; var bs = opts.childNodes; for(var j = 0; j < bs.length; j++) if(bs[j]._f === f) bs[j].className = "lb-btn ok";
+                 setText(msg, "الإجابة: " + (mode === "f2c" ? f[1] : f[2] + " (" + f[1] + ")")); msg.style.color = "#ff9b8f"; beep(200, 220, "square"); }
+          hud(); gTimeout(function(){ idx++; if(idx >= qs.length) finish(); else ask(); }, 1300);
+        });
+        b._f = c; b.style.minWidth = "40%"; opts.appendChild(b);
+      })(ch[k]);
+    }
+    hud();
+  }
+  function finish(){ endGame(score, "أجبت " + ok + " من " + qs.length + " إجابات صحيحة"); }
+  G.finishFn = finish; ask();
+}
+labReg({id:"flags", name:"الأعلام والعواصم", tag:"تعليمية", sd:"تعرّف على أعلام الدول وعواصمها", start:flagsStart,
+  icon:'<rect x="10" y="8" width="3" height="52" fill="#ccc"/><rect x="13" y="10" width="44" height="28" fill="#006c35"/><rect x="13" y="10" width="44" height="9" fill="#ce1126"/><rect x="13" y="28" width="44" height="10" fill="#000"/><rect x="13" y="19" width="44" height="9" fill="#fff"/>',
+  desc:"اختبر معلوماتك في أعلام الدول العربية ودول العالم وعواصمها.",
+  instr:["اختر نوع الأسئلة: من العلم إلى اسم الدولة، أو من اسم الدولة إلى عاصمتها، أو من العلم إلى العاصمة مباشرة.",
+         "اختر الدول: العربية أو دول العالم أو الجميع.",
+         "في كل لعبة 10 أسئلة، ولكل سؤال أربعة خيارات. الإجابة الصحيحة +10 مع مكافأة السرعة والتتابع."],
+  options:[{key:"mode", label:"نوع الأسئلة", choices:[["العلم ← الدولة","f2c"],["الدولة ← العاصمة","c2k"],["العلم ← العاصمة","f2k"]]},
+           {key:"reg", label:"الدول", choices:[["الدول العربية","arab"],["دول العالم","world"],["الجميع","all"]]}]});
+
+/* =====================================================================
+   5) مختبر العناصر
+   ===================================================================== */
+var AL_EL = {"ماء":"💧","نار":"🔥","تراب":"🟫","هواء":"💨","بخار":"♨️","طين":"🟤","حمم":"🌋","طاقة":"⚡","مطر":"🌧️","غبار":"🌫️","حجر":"🪨","معدن":"⚙️","غيمة":"☁️","برق":"🌩️",
+  "نبات":"🌱","شجرة":"🌳","غابة":"🌲","شمس":"☀️","قوس قزح":"🌈","زهرة":"🌻","طوب":"🧱","بيت":"🏠","قرية":"🏘️","مدينة":"🏙️","جبل":"⛰️","بحر":"🌊","حياة":"🧬","سمكة":"🐟",
+  "دودة":"🪱","طائر":"🐦","قرد":"🐒","إنسان":"🧑","أداة":"🔨","خشب":"🪵","قارب":"⛵","عائلة":"👪","رمل":"🏖️","زجاج":"🪟","ساعة رملية":"⏳","مصباح":"💡","رياح":"🌬️","عاصفة":"🌪️",
+  "ثلج":"❄️","رجل الثلج":"⛄","سماء":"🌌"};
+var AL_R = [["ماء","نار","بخار"],["تراب","ماء","طين"],["نار","تراب","حمم"],["هواء","نار","طاقة"],["هواء","ماء","مطر"],["هواء","تراب","غبار"],["حمم","ماء","حجر"],["حجر","نار","معدن"],
+  ["بخار","هواء","غيمة"],["غيمة","طاقة","برق"],["مطر","تراب","نبات"],["نبات","ماء","شجرة"],["شجرة","شجرة","غابة"],["طاقة","نار","شمس"],["مطر","شمس","قوس قزح"],["نبات","شمس","زهرة"],
+  ["طين","نار","طوب"],["طوب","طوب","بيت"],["بيت","بيت","قرية"],["قرية","قرية","مدينة"],["حجر","حجر","جبل"],["ماء","ماء","بحر"],["طاقة","طين","حياة"],["حياة","بحر","سمكة"],
+  ["حياة","تراب","دودة"],["حياة","هواء","طائر"],["حياة","شجرة","قرد"],["حياة","طين","إنسان"],["إنسان","معدن","أداة"],["أداة","شجرة","خشب"],["خشب","بحر","قارب"],["إنسان","بيت","عائلة"],
+  ["حجر","ماء","رمل"],["رمل","نار","زجاج"],["زجاج","رمل","ساعة رملية"],["زجاج","طاقة","مصباح"],["هواء","هواء","رياح"],["رياح","مطر","عاصفة"],["جبل","غيمة","ثلج"],["ثلج","إنسان","رجل الثلج"],["غيمة","غيمة","سماء"]];
+labCss(".al-inv{display:flex;display:-webkit-flex;flex-wrap:wrap;-webkit-flex-wrap:wrap;justify-content:center;-webkit-justify-content:center;max-height:46vh;overflow:auto;padding:4px}" +
+  ".al-it{width:82px;margin:4px;padding:6px 2px;border-radius:14px;background:rgba(255,255,255,.1);border:2px solid rgba(255,255,255,.25);color:#fff;cursor:pointer;font:bold 14px Tahoma,Arial,sans-serif;touch-action:manipulation}" +
+  ".al-it b{display:block;font-size:32px;font-weight:normal;line-height:40px}.al-it.new{border-color:#8dffb8;box-shadow:0 0 12px #8dffb8}.al-it.sel{background:#ffc83d;color:#2a1060}" +
+  ".al-mix{display:flex;display:-webkit-flex;align-items:center;-webkit-align-items:center;justify-content:center;-webkit-justify-content:center;margin:8px 0}" +
+  ".al-slot{width:92px;height:92px;border-radius:50%;border:3px dashed #ffc83d;display:flex;display:-webkit-flex;flex-direction:column;-webkit-flex-direction:column;align-items:center;-webkit-align-items:center;justify-content:center;-webkit-justify-content:center;font-size:13px;color:#fff;margin:0 6px;cursor:pointer}" +
+  ".al-slot b{font-size:38px;font-weight:normal}.al-op{font-size:34px;color:#ffc83d;font-weight:bold}.al-res{border-style:solid;border-color:#8dffb8}");
+function alchStart(o){
+  var have = {"ماء":1, "نار":1, "تراب":1, "هواء":1}, order = ["ماء","نار","تراب","هواء"], slots = [null, null], score = 0, hints = 0, total = 0, k, last = null;
+  for(k in AL_EL) total++;
+  var root = $("gstage"), wrap = el("div", "lb-wrap"), mix = el("div", "al-mix"), msg = el("div", "lb-msg", "اختر عنصرين لدمجهما"), inv = el("div", "al-inv"), bar = el("div");
+  var s1 = el("div", "al-slot"), s2 = el("div", "al-slot"), rs = el("div", "al-slot al-res");
+  mix.appendChild(s1); mix.appendChild(el("span", "al-op", "+")); mix.appendChild(s2); mix.appendChild(el("span", "al-op", "=")); mix.appendChild(rs);
+  wrap.appendChild(mix); wrap.appendChild(msg); wrap.appendChild(inv); wrap.appendChild(bar); root.appendChild(wrap);
+  s1.onclick = function(){ slots[0] = null; draw(); }; s2.onclick = function(){ slots[1] = null; draw(); };
+  bar.appendChild(mkbtn("تلميح (-3)", "btn small alt", hint));
+  function count(){ var n = 0; for(var x in have) n++; return n; }
+  function hud(){ setHud(chip("المكتشفة", count() + "/" + total) + chip("النقاط", score) + chip("التلميحات", hints), true); }
+  function slotHtml(s, name){ s.innerHTML = name ? "<b>" + AL_EL[name] + "</b>" : "<span style='opacity:.6'>؟</span>"; if(name){ var t = el("span", null, name); s.appendChild(t); } }
+  function draw(){
+    slotHtml(s1, slots[0]); slotHtml(s2, slots[1]); if(!slots[0] || !slots[1]) slotHtml(rs, null);
+    clearKids(inv);
+    for(var i = 0; i < order.length; i++){
+      (function(n){
+        var b = mkbtn("", "al-it" + (n === last ? " new" : ""), function(){ choose(n); });
+        b.innerHTML = "<b>" + AL_EL[n] + "</b>"; b.appendChild(document.createTextNode(n)); inv.appendChild(b);
+      })(order[i]);
+    }
+    hud();
+  }
+  function recipe(a, b){ for(var i = 0; i < AL_R.length; i++){ var r = AL_R[i]; if((r[0] === a && r[1] === b) || (r[0] === b && r[1] === a)) return r[2]; } return null; }
+  function choose(n){
+    if(!slots[0]) slots[0] = n; else if(!slots[1]) slots[1] = n; else { slots[0] = n; slots[1] = null; }
+    beep(500, 40); draw();
+    if(slots[0] && slots[1]) gTimeout(combine, 250);
+  }
+  function combine(){
+    var r = recipe(slots[0], slots[1]);
+    if(!r){ setText(msg, "لا شيء يحدث... جرّب مزيجاً آخر"); msg.style.color = "#ff9b8f"; beep(180, 160, "square"); slotHtml(rs, null); rs.innerHTML = "<b>💨</b>"; gTimeout(function(){ slots = [null, null]; draw(); }, 900); return; }
+    slotHtml(rs, r);
+    if(have[r]){ setText(msg, r + " اكتشفته من قبل"); msg.style.color = "#ffe08a"; beep(420, 80); }
+    else {
+      have[r] = 1; order.push(r); last = r; score += 10; setText(msg, "اكتشاف جديد: " + r + " " + AL_EL[r] + " (+10)"); msg.style.color = "#8dffb8";
+      beep(660, 90); setTimeout(function(){ beep(880, 90); }, 90); setTimeout(function(){ beep(1175, 160); }, 180);
+      if(count() === total){ score += 100; setText(msg, "رائع! اكتشفت كل العناصر (+100)"); gTimeout(finish, 2000); }
+    }
+    gTimeout(function(){ slots = [null, null]; draw(); }, 1000);
+  }
+  function hint(){
+    var c = [];
+    for(var i = 0; i < AL_R.length; i++){ var r = AL_R[i]; if(!have[r[2]] && have[r[0]] && have[r[1]]) c.push(r); }
+    if(!c.length) return;
+    var h = pick(c); hints++; score = Math.max(0, score - 3);
+    setText(msg, "جرّب: " + h[0] + " + " + h[1]); msg.style.color = "#4dd0e1"; hud();
+  }
+  function finish(){ endGame(score, "اكتشفت " + count() + " من " + total + " عنصراً | التلميحات: " + hints); }
+  G.finishFn = finish; draw();
+}
+labReg({id:"alch", name:"مختبر العناصر", tag:"تعليمية", sd:"ادمج العناصر واكتشف عناصر جديدة", start:alchStart,
+  icon:'<path d="M24 6H40V22L54 50Q56 58 48 58H16Q8 58 10 50L24 22Z" fill="#4dd0e1" opacity=".35" stroke="#fff" stroke-width="3"/><path d="M14 44H50L54 52Q54 56 48 56H16Q10 56 10 52Z" fill="#8dffb8"/><circle cx="28" cy="36" r="3" fill="#fff"/><circle cx="36" cy="30" r="2" fill="#fff"/>',
+  desc:"ابدأ بالماء والنار والتراب والهواء، وادمجها لتكتشف " + (function(){ var n = 0; for(var k in AL_EL) n++; return n; })() + " عنصراً مثل الطين والبرق والحياة والمدينة.",
+  instr:["اضغط على عنصرين من مجموعتك فيُدمجان في الوعاء.",
+         "إذا كان المزيج صحيحاً يظهر عنصر جديد ويُضاف إلى مجموعتك (+10).",
+         "استعمل العناصر الجديدة لتكتشف المزيد: مثلاً الماء والنار يصنعان البخار.",
+         "زر التلميح يقترح عليك مزيجاً مفيداً مقابل 3 نقاط. اكتشف كل العناصر لتحصل على مكافأة 100 نقطة."]});
+
+/* =====================================================================
+   6) معادلات أعواد الثقاب (حرّك عوداً واحداً)
+   ===================================================================== */
+var MT_DIG = ["1111110","0110000","1101101","1111001","0110011","1011011","1011111","1110000","1111111","1111011"];
+function mtDigit(bits){ for(var i = 0; i < 10; i++) if(MT_DIG[i] === bits) return i; return -1; }
+/* الحالة: 23 خانة = 3 أرقام × 7 + خانتا العملية (أفقي، عمودي) */
+function mtEval(st){
+  var d = [], i;
+  for(i = 0; i < 3; i++){ var v = mtDigit(st.slice(i * 7, i * 7 + 7).join("")); if(v < 0) return null; d.push(v); }
+  if(!st[21]) return null;
+  var r = st[22] ? d[0] + d[1] : d[0] - d[1];
+  return {ok:r === d[2], d:d, op:st[22] ? "+" : "-"};
+}
+function mtFromEq(a, op, b, c){
+  var st = [], i, s = [MT_DIG[a], MT_DIG[b], MT_DIG[c]];
+  for(i = 0; i < 3; i++) for(var j = 0; j < 7; j++) st.push(s[i].charAt(j) === "1" ? 1 : 0);
+  st.push(1); st.push(op === "+" ? 1 : 0); return st;
+}
+function mtGen(){
+  for(var tries = 0; tries < 400; tries++){
+    var op = Math.random() < 0.5 ? "+" : "-", a = rint(0, 9), b = rint(0, 9), c = op === "+" ? a + b : a - b;
+    if(c < 0 || c > 9) continue;
+    var st = mtFromEq(a, op, b, c), cands = [], i, j;
+    for(i = 0; i < 23; i++) if(st[i]) for(j = 0; j < 23; j++) if(!st[j] && i !== j && !(i === 21)){
+      var t = st.slice(0); t[i] = 0; t[j] = 1; var e = mtEval(t); if(e && !e.ok) cands.push(t);
+    }
+    if(cands.length) return pick(cands);
+  }
+  return mtFromEq(3, "+", 5, 9);
+}
+function matchStart(o){
+  var L = o.lv, N = 10, TL = [0, 0, 60, 35][L];
+  makeCanvas();
+  var ctx = G.ctx, st = null, sel = -1, idx = 0, score = 0, solvedN = 0, t0 = 0, state = "play", msg = "", msgC = "#fff", msgT = 0, popups = [], moved = null, hintSlot = -1;
+  var DX = [70, 330, 610], DY = 150, W = 92, H = 180, OPX = 245, EQX = 525, CY = DY + H / 2;
+  function segs(){
+    var r = [], i, x, y, k;
+    for(i = 0; i < 3; i++){
+      x = DX[i]; y = DY;
+      var S = [[x, y, x + W, y], [x + W, y, x + W, y + H / 2], [x + W, y + H / 2, x + W, y + H], [x, y + H, x + W, y + H], [x, y + H / 2, x, y + H], [x, y, x, y + H / 2], [x, y + H / 2, x + W, y + H / 2]];
+      for(k = 0; k < 7; k++) r.push(S[k]);
+    }
+    r.push([OPX - 40, CY, OPX + 40, CY]); r.push([OPX, CY - 40, OPX, CY + 40]);
+    return r;
+  }
+  var SG = segs();
+  function newPuzzle(){ st = mtGen(); sel = -1; t0 = now(); state = "play"; moved = null; hintSlot = -1; msg = "حرّك عوداً واحداً لتصبح المعادلة صحيحة"; msgC = "#ffe08a"; msgT = 99; }
+  function drawStick(s, on, hl, ghost){
+    var x1 = s[0], y1 = s[1], x2 = s[2], y2 = s[3], dx = x2 - x1, dy = y2 - y1, len = Math.sqrt(dx * dx + dy * dy), sh = 8;
+    var ax = x1 + dx / len * sh, ay = y1 + dy / len * sh, bx = x2 - dx / len * sh, by = y2 - dy / len * sh;
+    if(ghost){ ctx.strokeStyle = hl ? "rgba(141,255,184,.75)" : "rgba(255,255,255,.12)"; ctx.lineWidth = hl ? 10 : 8; ctx.setLineDash ? ctx.setLineDash([8, 8]) : 0; ctx.lineCap = "round";
+      ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx, by); ctx.stroke(); if(ctx.setLineDash) ctx.setLineDash([]); return; }
+    var lift = hl ? -6 : 0;
+    ctx.lineCap = "round"; ctx.strokeStyle = "rgba(0,0,0,.35)"; ctx.lineWidth = 11; ctx.beginPath(); ctx.moveTo(ax + 3, ay + 4); ctx.lineTo(bx + 3, by + 4); ctx.stroke();
+    ctx.strokeStyle = hl ? "#ffe9a8" : "#e9c27a"; ctx.lineWidth = 10; ctx.beginPath(); ctx.moveTo(ax, ay + lift); ctx.lineTo(bx, by + lift); ctx.stroke();
+    ctx.fillStyle = "#d6331f"; ctx.beginPath(); ctx.arc(ax, ay + lift, 8, 0, 6.2832); ctx.fill();
+    if(hl){ ctx.strokeStyle = "#ffc83d"; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc((ax + bx) / 2, (ay + by) / 2 + lift, len / 2, 0, 6.2832); ctx.globalAlpha = 0.25; ctx.stroke(); ctx.globalAlpha = 1; }
+  }
+  function dist(px, py, s){
+    var x1 = s[0], y1 = s[1], x2 = s[2], y2 = s[3], dx = x2 - x1, dy = y2 - y1, t = ((px - x1) * dx + (py - y1) * dy) / (dx * dx + dy * dy);
+    t = Math.max(0, Math.min(1, t)); var qx = x1 + t * dx - px, qy = y1 + t * dy - py; return Math.sqrt(qx * qx + qy * qy);
+  }
+  function hit(p, wantOn){ var best = -1, bd = 26, i; for(i = 0; i < 23; i++){ if(i === 21 && wantOn) continue; if(!!st[i] !== wantOn) continue; var d = dist(p.x, p.y, SG[i]); if(d < bd){ bd = d; best = i; } } return best; }
+  gListen(G.canvas, "mousedown", function(e){
+    if(state !== "play") return;
+    var p = canvasPos(e);
+    if(sel < 0){ var h = hit(p, true); if(h >= 0){ sel = h; beep(520, 40); } return; }
+    var t = hit(p, false);
+    if(t < 0){ var h2 = hit(p, true); sel = h2 === sel ? -1 : h2; return; }
+    st[sel] = 0; st[t] = 1; moved = [sel, t]; sel = -1; beep(640, 50);
+    var e2 = mtEval(st);
+    if(e2 && e2.ok){
+      state = "won"; solvedN++; var secs = (now() - t0) / 1000, pts = 20 + Math.max(0, Math.round(30 - secs)) * (L > 1 ? 2 : 1) - (hintSlot >= 0 ? 10 : 0); pts = Math.max(5, pts);
+      score += pts; msg = "أحسنت! المعادلة صحيحة +" + pts; msgC = "#8dffb8"; popups.push({x:CW / 2, y:DY - 30, t:0, s:"+" + pts, c:"#8dffb8"});
+      beep(760, 90); setTimeout(function(){ beep(1020, 160); }, 100);
+      gTimeout(next, 1500);
+    }else{
+      msg = e2 ? "المعادلة ما زالت خاطئة، أعدنا العود مكانه" : "هذا ليس رقماً صحيحاً، أعدنا العود مكانه"; msgC = "#ff9b8f"; beep(200, 200, "square");
+      state = "undo"; gTimeout(function(){ if(moved){ st[moved[1]] = 0; st[moved[0]] = 1; moved = null; } state = "play"; msg = "حاول مرة أخرى"; msgC = "#ffe08a"; }, 900);
+    }
+  });
+  function next(){ idx++; if(idx >= N) finish(); else newPuzzle(); }
+  var bar = el("div", "life-bar");
+  bar.appendChild(mkbtn("تلميح (-10)", "btn small alt", function(){
+    if(state !== "play") return;
+    for(var i = 0; i < 23; i++) if(st[i] && i !== 21) for(var j = 0; j < 23; j++) if(!st[j] && j !== i){
+      var t = st.slice(0); t[i] = 0; t[j] = 1; var e = mtEval(t); if(e && e.ok){ hintSlot = i; msg = "جرّب تحريك العود المضيء"; msgC = "#4dd0e1"; return; }
+    }
+  }));
+  bar.appendChild(mkbtn("تخطي", "btn small alt", function(){ if(state === "play"){ msg = "تخطيت المعادلة"; next(); } }));
+  $("gstage").appendChild(bar);
+  function finish(){ state = "over"; endGame(score, "حللت " + solvedN + " من " + N + " معادلات"); }
+  newPuzzle();
+  gLoop(function(dt){
+    var i;
+    if(TL && state === "play" && (now() - t0) / 1000 > TL){ msg = "انتهى وقت المعادلة"; msgC = "#ff9b8f"; state = "undo"; gTimeout(next, 900); }
+    var g = ctx.createLinearGradient(0, 0, 0, CH); g.addColorStop(0, "#3b2a1e"); g.addColorStop(1, "#24170f"); ctx.fillStyle = g; ctx.fillRect(0, 0, CW, CH);
+    ctx.fillStyle = "rgba(255,255,255,.04)"; for(i = 0; i < 12; i++) ctx.fillRect(0, i * 40, CW, 2);
+    for(i = 0; i < 23; i++){ if(i === 21 || st[i]) continue; drawStick(SG[i], false, sel >= 0, true); }
+    for(i = 0; i < 23; i++) if(st[i]) drawStick(SG[i], true, i === sel || i === hintSlot && Math.floor(now() / 300) % 2 === 0, false);
+    ctx.strokeStyle = "#e9c27a"; ctx.lineWidth = 10; ctx.lineCap = "round";
+    ctx.beginPath(); ctx.moveTo(EQX - 34, CY - 16); ctx.lineTo(EQX + 34, CY - 16); ctx.moveTo(EQX - 34, CY + 16); ctx.lineTo(EQX + 34, CY + 16); ctx.stroke();
+    bigText(ctx, msg, CW / 2, 60, 26, msgC, "#1a1030");
+    if(TL && state === "play"){ var left = Math.max(0, TL - (now() - t0) / 1000); bigText(ctx, Math.ceil(left) + " ث", CW / 2, CH - 40, 24, left < 10 ? "#ff9b8f" : "#ffe08a", "#1a1030"); }
+    drawPopups(ctx, popups, dt);
+    setHud(chip("المعادلة", Math.min(idx + 1, N) + "/" + N) + chip("النقاط", score) + chip("المحلولة", solvedN), true);
+  });
+  G.finishFn = finish;
+}
+labReg({id:"match", name:"أعواد الثقاب", tag:"تعليمية", sd:"حرّك عوداً واحداً لتصح المعادلة", start:matchStart,
+  icon:'<path d="M10 20H30M30 20V40M10 40H30M44 22V42M34 32H54" stroke="#e9c27a" stroke-width="5" stroke-linecap="round"/><circle cx="10" cy="20" r="4" fill="#d6331f"/><circle cx="10" cy="40" r="4" fill="#d6331f"/><circle cx="44" cy="22" r="4" fill="#d6331f"/><circle cx="34" cy="32" r="4" fill="#d6331f"/>',
+  desc:"معادلة حسابية مكتوبة بأعواد الثقاب لكنها خاطئة: حرّك عوداً واحداً فقط لتصبح صحيحة.",
+  instr:["اضغط على العود الذي تريد تحريكه فيرتفع ويضيء، ثم اضغط على المكان الفارغ (المنقّط) الذي تريد وضعه فيه.",
+         "يمكن تحريك أي عود في الأرقام أو العود العمودي في علامة + (فتصبح −). علامة = ثابتة.",
+         "إذا لم تصبح المعادلة صحيحة يعود العود مكانه وتحاول مرة أخرى.",
+         "10 معادلات. كلما حللت أسرع زادت نقاطك. المتوسط: دقيقة لكل معادلة، الصعب: 35 ثانية."],
+  options:[{key:"lv", label:"المستوى", choices:[["سهل - بلا وقت",1],["متوسط - دقيقة",2],["صعب - 35 ثانية",3]]}]});
+
+/* =====================================================================
+   7) 2048 (اسحب لتدمج الأرقام)
+   ===================================================================== */
+var T48_COL = {2:["#eee4da","#776e65"],4:["#ede0c8","#776e65"],8:["#f2b179","#fff"],16:["#f59563","#fff"],32:["#f67c5f","#fff"],64:["#f65e3b","#fff"],128:["#edcf72","#fff"],256:["#edcc61","#fff"],512:["#edc850","#fff"],1024:["#edc53f","#fff"],2048:["#edc22e","#fff"]};
+labCss(".t48{position:relative;margin:6px auto;background:#5a4a8a;border-radius:14px;touch-action:none;-webkit-user-select:none;user-select:none}" +
+  ".t48 .c{position:absolute;border-radius:10px;background:rgba(255,255,255,.12)}" +
+  ".t48 .t{position:absolute;border-radius:10px;display:flex;display:-webkit-flex;align-items:center;-webkit-align-items:center;justify-content:center;-webkit-justify-content:center;font-family:Arial,sans-serif;font-weight:bold;transition:transform .11s ease-in-out;-webkit-transition:-webkit-transform .11s ease-in-out}" +
+  ".t48 .t.new{animation:t48n .18s;-webkit-animation:t48n .18s}.t48 .t.mg{animation:t48m .2s;-webkit-animation:t48m .2s}" +
+  "@keyframes t48n{from{opacity:0;transform:scale(.3)}}@-webkit-keyframes t48n{from{opacity:0}}" +
+  "@keyframes t48m{50%{filter:brightness(1.3)}}");
+function t48Start(o){
+  var N = o.n, root = $("gstage"), wrap = el("div", "lb-wrap"), board = el("div", "t48"), msg = el("div", "lb-msg", "اسحب بإصبعك أو استخدم الأسهم");
+  wrap.appendChild(board); wrap.appendChild(msg); root.appendChild(wrap);
+  var size = Math.min(420, Math.floor(Math.min(window.innerWidth * 0.92, window.innerHeight * 0.55))), gap = Math.round(size * 0.025), cell = (size - gap * (N + 1)) / N;
+  board.style.width = size + "px"; board.style.height = size + "px";
+  var grid = [], tiles = [], score = 0, best = load("lab_2048_" + N, 0), moves = 0, won = false, over = false, busy = false, r, c;
+  for(r = 0; r < N; r++){ grid.push([]); for(c = 0; c < N; c++){ grid[r].push(null); var bg = el("div", "c"); bg.style.cssText = "width:" + cell + "px;height:" + cell + "px;left:" + (gap + c * (cell + gap)) + "px;top:" + (gap + r * (cell + gap)) + "px"; board.appendChild(bg); } }
+  function pos(t){ var x = gap + t.c * (cell + gap), y = gap + t.r * (cell + gap), s = "translate(" + x + "px," + y + "px)"; t.el.style.transform = s; t.el.style.webkitTransform = s; }
+  function paint(t){ var col = T48_COL[t.v] || ["#3c3a32","#fff"]; t.el.style.background = col[0]; t.el.style.color = col[1]; setText(t.el, t.v); t.el.style.fontSize = Math.round(cell * (t.v < 100 ? 0.45 : t.v < 1000 ? 0.36 : 0.28)) + "px"; }
+  function add(){
+    var free = []; for(r = 0; r < N; r++) for(c = 0; c < N; c++) if(!grid[r][c]) free.push([r, c]);
+    if(!free.length) return; var f = pick(free), t = {r:f[0], c:f[1], v:Math.random() < 0.9 ? 2 : 4, el:el("div", "t new")};
+    t.el.style.width = cell + "px"; t.el.style.height = cell + "px"; t.el.style.left = "0"; t.el.style.top = "0";
+    grid[t.r][t.c] = t; tiles.push(t); paint(t); pos(t); board.appendChild(t.el);
+  }
+  function canMove(){
+    for(r = 0; r < N; r++) for(c = 0; c < N; c++){ var t = grid[r][c]; if(!t) return true;
+      if(c + 1 < N && grid[r][c + 1] && grid[r][c + 1].v === t.v) return true; if(r + 1 < N && grid[r + 1][c] && grid[r + 1][c].v === t.v) return true; }
+    return false;
+  }
+  function move(dx, dy){
+    if(busy || over) return;
+    var moved = false, rs = range(N), cs = range(N), i, j, gained = 0, dead = [];
+    if(dx === 1) cs.reverse(); if(dy === 1) rs.reverse();
+    for(i = 0; i < N; i++) for(j = 0; j < N; j++){ r = rs[i]; c = cs[j]; var t = grid[r][c]; if(!t) continue;
+      var nr = r, nc = c;
+      while(true){ var tr = nr + dy, tc = nc + dx; if(tr < 0 || tc < 0 || tr >= N || tc >= N) break; var o2 = grid[tr][tc];
+        if(!o2){ nr = tr; nc = tc; continue; }
+        if(o2.v === t.v && !o2.merged){ grid[r][c] = null; o2.merged = true; o2.v *= 2; gained += o2.v; t.r = tr; t.c = tc; pos(t); dead.push([t, o2]); moved = true; nr = -1; }
+        break; }
+      if(nr >= 0 && (nr !== r || nc !== c)){ grid[r][c] = null; grid[nr][nc] = t; t.r = nr; t.c = nc; pos(t); moved = true; }
+    }
+    if(!moved) return;
+    busy = true; moves++; score += gained; if(score > best){ best = score; save("lab_2048_" + N, best); }
+    beep(gained ? 520 + Math.min(gained, 2048) / 6 : 320, 40);
+    gTimeout(function(){
+      for(i = 0; i < dead.length; i++){ board.removeChild(dead[i][0].el); tiles.splice(tiles.indexOf(dead[i][0]), 1); var m = dead[i][1]; paint(m); m.el.className = "t"; void m.el.offsetWidth; m.el.className = "t mg";
+        if(m.v === 2048 && !won){ won = true; setText(msg, "رائع! وصلت إلى 2048 🎉 تابع لتكسب المزيد"); msg.style.color = "#ffc83d"; beep(880, 120); setTimeout(function(){ beep(1320, 300); }, 130); } }
+      for(i = 0; i < tiles.length; i++) tiles[i].merged = false;
+      add(); busy = false; hud();
+      if(!canMove()){ over = true; setText(msg, "لا توجد حركات متاحة!"); msg.style.color = "#ff9b8f"; gTimeout(finish, 1500); }
+    }, 120);
+    hud();
+  }
+  function maxT(){ var m = 0; for(var i = 0; i < tiles.length; i++) m = Math.max(m, tiles[i].v); return m; }
+  function hud(){ setHud(chip("النقاط", score) + chip("الأفضل", best) + chip("أكبر رقم", maxT()) + chip("الحركات", moves), true); }
+  swipe(board, function(dx, dy){ move(dx, dy); });
+  gListen(document, "keydown", function(e){ var k = e.keyCode; if(k === 37){ move(-1, 0); stopKey(e); } else if(k === 39){ move(1, 0); stopKey(e); } else if(k === 38){ move(0, -1); stopKey(e); } else if(k === 40){ move(0, 1); stopKey(e); } });
+  makePad({mode:"4", onPress:function(dx, dy){ move(dx, dy); }});
+  function finish(){ endGame(score, "أكبر رقم وصلت إليه: " + maxT() + " | الحركات: " + moves); }
+  G.finishFn = finish; add(); add(); hud();
+}
+labReg({id:"t2048", name:"2048", tag:"تفكير", sd:"ادمج الأرقام حتى تصل إلى 2048", start:t48Start,
+  icon:'<rect x="4" y="4" width="56" height="56" rx="8" fill="#5a4a8a"/><rect x="8" y="8" width="23" height="23" rx="4" fill="#edc22e"/><rect x="33" y="8" width="23" height="23" rx="4" fill="#f59563"/><rect x="8" y="33" width="23" height="23" rx="4" fill="#eee4da"/><rect x="33" y="33" width="23" height="23" rx="4" fill="#f2b179"/><text x="19.5" y="24" font-size="9" font-weight="bold" fill="#fff" text-anchor="middle" font-family="Arial">2048</text>',
+  desc:"اسحب الأرقام في أي اتجاه، فإذا التقى رقمان متساويان اندمجا في رقم واحد مجموعهما. حاول الوصول إلى 2048!",
+  instr:["اسحب بإصبعك على اللوحة (أو استخدم الأسهم أو عصا التحكم) فتتحرك كل الأرقام في ذلك الاتجاه.",
+         "إذا التقى رقمان متساويان اندمجا: 2+2=4، 4+4=8، ... حتى 2048.",
+         "بعد كل حركة يظهر رقم جديد. تنتهي اللعبة عندما تمتلئ اللوحة ولا يمكن الدمج.",
+         "نقاطك هي مجموع الأرقام التي دمجتها. اختر اللوحة 5×5 لتكون أسهل، أو 3×3 لتحدٍّ صعب."],
+  options:[{key:"n", label:"حجم اللوحة", choices:[["5×5 - أسهل",5],["4×4 - الأصلية",4],["3×3 - صعب جداً",3]]}]});
+
+/* =====================================================================
+   8) سودوكو (4×4، 6×6، 9×9) بالأرقام أو بالصور
+   ===================================================================== */
+var SD_EMO = ["🍎","🍌","🍇","🍊","🍓","🍉","🥝","🍒","🍍"];
+labCss(".sd-g{display:grid;margin:6px auto;background:#2a1060;border:3px solid #ffc83d;border-radius:8px;overflow:hidden;direction:ltr}" +
+  ".sd-c{display:flex;display:-webkit-flex;align-items:center;-webkit-align-items:center;justify-content:center;-webkit-justify-content:center;background:#fff;color:#2a1060;font-family:Arial,sans-serif;font-weight:bold;cursor:pointer;-webkit-user-select:none;user-select:none;touch-action:manipulation}" +
+  ".sd-c.giv{background:#e8e0ff;color:#2a1060}.sd-c.usr{color:#2f6fb5}.sd-c.bad{color:#fff;background:#e74c3c}.sd-c.hl{background:#fff6d6}.sd-c.giv.hl{background:#efe3b8}.sd-c.same{background:#ffe08a}.sd-c.sel{background:#ffc83d}" +
+  ".sd-pad{direction:ltr;display:flex;display:-webkit-flex;flex-wrap:wrap;-webkit-flex-wrap:wrap;justify-content:center;-webkit-justify-content:center;margin-top:8px}.sd-pad .lb-btn{min-width:52px;font-size:26px}");
+function sdBox(n){ return n === 4 ? [2, 2] : n === 6 ? [2, 3] : [3, 3]; }
+function sdSolve(g, n, cnt, limit){
+  var bx = sdBox(n), i, v, r, c;
+  for(i = 0; i < n * n; i++) if(!g[i]) break;
+  if(i === n * n) return cnt + 1;
+  r = Math.floor(i / n); c = i % n;
+  var vals = shuffle(range(n).map(function(x){ return x + 1; }));
+  for(var k = 0; k < n; k++){ v = vals[k]; if(sdOk(g, n, r, c, v, bx)){ g[i] = v; cnt = sdSolve(g, n, cnt, limit); if(cnt >= limit){ if(limit === 1) return cnt; g[i] = 0; return cnt; } g[i] = 0; } }
+  return cnt;
+}
+function sdOk(g, n, r, c, v, bx){
+  for(var k = 0; k < n; k++){ if(g[r * n + k] === v || g[k * n + c] === v) return false; }
+  var r0 = Math.floor(r / bx[0]) * bx[0], c0 = Math.floor(c / bx[1]) * bx[1];
+  for(var a = 0; a < bx[0]; a++) for(var b = 0; b < bx[1]; b++) if(g[(r0 + a) * n + c0 + b] === v) return false;
+  return true;
+}
+function sdGen(n, holes){
+  var full = []; for(var i = 0; i < n * n; i++) full.push(0);
+  sdSolve(full, n, 0, 1);
+  var puz = full.slice(0), order = shuffle(range(n * n)), removed = 0, t0 = now();
+  for(i = 0; i < order.length && removed < holes; i++){
+    var k = order[i], keep = puz[k]; puz[k] = 0;
+    if(now() - t0 > 1500 || sdSolve(puz.slice(0), n, 0, 2) !== 1){ puz[k] = keep; } else removed++;
+  }
+  return {sol:full, puz:puz};
+}
+function sudokuStart(o){
+  var n = o.n, emo = o.sym === "emo" && n <= 9, holes = n === 4 ? 10 : n === 6 ? 22 : 46, P = sdGen(n, holes), bx = sdBox(n);
+  var cur = P.puz.slice(0), sel = -1, mistakes = 0, t0 = now(), done = false, cells = [];
+  var root = $("gstage"), wrap = el("div", "lb-wrap"), g = el("div", "sd-g"), pad = el("div", "sd-pad"), msg = el("div", "lb-msg", "اختر مربعاً ثم اختر " + (emo ? "الصورة" : "الرقم"));
+  var sz = Math.min(470, Math.floor(Math.min(window.innerWidth * 0.94, window.innerHeight * 0.58))), cs = Math.floor((sz - 6) / n);
+  g.style.gridTemplateColumns = "repeat(" + n + "," + cs + "px)"; g.style.width = (cs * n + 6) + "px";
+  wrap.appendChild(g); wrap.appendChild(msg); wrap.appendChild(pad); root.appendChild(wrap);
+  function sym(v){ return v ? (emo ? SD_EMO[v - 1] : String(v)) : ""; }
+  for(var i = 0; i < n * n; i++){
+    (function(i){
+      var c = el("div", "sd-c"), r = Math.floor(i / n), cc = i % n;
+      c.style.height = cs + "px"; c.style.fontSize = Math.round(cs * (emo ? 0.55 : 0.55)) + "px";
+      var bt = (r % bx[0] === 0 && r) ? 3 : 1, bl = (cc % bx[1] === 0 && cc) ? 3 : 1;
+      c.style.borderTop = bt + "px solid " + (bt > 1 ? "#2a1060" : "#c9bfe8"); c.style.borderLeft = bl + "px solid " + (bl > 1 ? "#2a1060" : "#c9bfe8");
+      c.onclick = function(){ if(done) return; sel = i; draw(); };
+      g.appendChild(c); cells.push(c);
+    })(i);
+  }
+  for(var v = 1; v <= n; v++) (function(v){ pad.appendChild(mkbtn(sym(v), "lb-btn", function(){ put(v); })); })(v);
+  pad.appendChild(mkbtn("⌫", "lb-btn", function(){ put(0); }));
+  function put(v){
+    if(done || sel < 0 || P.puz[sel]) return;
+    cur[sel] = v;
+    if(v && v !== P.sol[sel]){ mistakes++; beep(200, 180, "square"); setText(msg, "هذا " + (emo ? "الشكل" : "الرقم") + " لا يناسب هذا المربع"); msg.style.color = "#ff9b8f"; }
+    else if(v){ beep(600, 50); setText(msg, ""); }
+    draw();
+    var full = true; for(var k = 0; k < n * n; k++) if(cur[k] !== P.sol[k]) full = false;
+    if(full){ done = true; var secs = Math.round((now() - t0) / 1000), base = n === 4 ? 100 : n === 6 ? 250 : 600, sc = Math.max(20, base - mistakes * 15 + Math.max(0, (n === 4 ? 120 : n === 6 ? 400 : 1200) - secs));
+      setText(msg, "أحسنت! حللت السودوكو"); msg.style.color = "#8dffb8"; beep(760, 100); setTimeout(function(){ beep(1020, 220); }, 110);
+      gTimeout(function(){ endGame(sc, "الوقت: " + fmt(secs) + " | الأخطاء: " + mistakes); }, 1500); }
+  }
+  function draw(){
+    var sr = sel >= 0 ? Math.floor(sel / n) : -1, sc = sel % n, sv = sel >= 0 ? cur[sel] : 0;
+    for(var k = 0; k < n * n; k++){
+      var r = Math.floor(k / n), c = k % n, cls = "sd-c" + (P.puz[k] ? " giv" : " usr");
+      var same = sel >= 0 && (r === sr || c === sc || (Math.floor(r / bx[0]) === Math.floor(sr / bx[0]) && Math.floor(c / bx[1]) === Math.floor(sc / bx[1])));
+      if(cur[k] && cur[k] !== P.sol[k]) cls += " bad"; else if(k === sel) cls += " sel"; else if(sv && cur[k] === sv) cls += " same"; else if(same) cls += " hl";
+      cells[k].className = cls; setText(cells[k], sym(cur[k]));
+    }
+    setHud(chip("الأخطاء", mistakes) + chip("الوقت", fmt((now() - t0) / 1000)) + chip("المتبقي", (function(){ var m = 0; for(var q = 0; q < n * n; q++) if(cur[q] !== P.sol[q]) m++; return m; })()), true);
+  }
+  gListen(document, "keydown", function(e){ var k = e.keyCode, v = k >= 49 && k <= 57 ? k - 48 : k >= 97 && k <= 105 ? k - 96 : -1; if(v > 0 && v <= n) put(v); else if(k === 8 || k === 46) put(0); });
+  gInterval(function(){ if(!done) draw(); }, 1000);
+  G.finishFn = function(){ endGame(0, "لم تكتمل اللوحة", true); };
+  draw();
+}
+labReg({id:"sudoku", name:"سودوكو", tag:"تفكير", sd:"املأ الشبكة دون تكرار", start:sudokuStart,
+  icon:'<rect x="4" y="4" width="56" height="56" rx="6" fill="#fff"/><path d="M23 4V60M41 4V60M4 23H60M4 41H60" stroke="#2a1060" stroke-width="3"/><text x="13.5" y="19" font-size="13" font-weight="bold" fill="#2f6fb5" text-anchor="middle" font-family="Arial">5</text><text x="32" y="37" font-size="13" font-weight="bold" fill="#2a1060" text-anchor="middle" font-family="Arial">3</text><text x="50" y="55" font-size="13" font-weight="bold" fill="#2f6fb5" text-anchor="middle" font-family="Arial">9</text>',
+  desc:"املأ الشبكة بحيث لا يتكرر أي رقم (أو صورة) في الصف ولا في العمود ولا في المربع الصغير.",
+  instr:["اضغط على مربع فارغ ثم اختر الرقم المناسب من الأزرار تحت اللوحة.",
+         "كل صف وكل عمود وكل مربع صغير (المحاط بخط غامق) يجب أن يحتوي على كل الأرقام دون تكرار.",
+         "الرقم الخاطئ يظهر باللون الأحمر ويُحسب خطأ. يضيء الصف والعمود والمربع للمربع المختار لتساعدك.",
+         "4×4 للمبتدئين، 6×6 متوسط، 9×9 السودوكو الأصلي. يمكنك اختيار الصور (فواكه) بدل الأرقام للصغار."],
+  options:[{key:"n", label:"حجم الشبكة", choices:[["4×4 - مبتدئ",4],["6×6 - متوسط",6],["9×9 - أصلي",9]]},
+           {key:"sym", label:"الرموز", choices:[["أرقام","num"],["صور فواكه","emo"]]}]});
+
+/* =====================================================================
+   9) فرز الألوان في الأنابيب
+   ===================================================================== */
+var SO_COL = ["#e74c3c","#3498db","#2ecc71","#f1c40f","#9b59b6","#e67e22","#1abc9c","#ff7ac8","#95a5a6","#8b5a2b"];
+var SO_SYM = ["●","■","▲","◆","★","♥","✚","☾","⬟","✿"];
+labCss(".so-area{display:flex;display:-webkit-flex;flex-wrap:wrap;-webkit-flex-wrap:wrap;justify-content:center;-webkit-justify-content:center;align-items:flex-end;-webkit-align-items:flex-end;margin:16px auto 6px;max-width:720px;direction:ltr}" +
+  ".so-t{position:relative;margin:10px 6px;border:3px solid rgba(255,255,255,.7);border-top:none;border-radius:0 0 26px 26px;background:rgba(255,255,255,.08);display:flex;display:-webkit-flex;flex-direction:column-reverse;-webkit-flex-direction:column-reverse;align-items:center;-webkit-align-items:center;padding:4px 0;cursor:pointer;transition:transform .15s;touch-action:manipulation}" +
+  ".so-t.sel{transform:translateY(-14px);border-color:#ffc83d;box-shadow:0 0 16px rgba(255,200,61,.6)}.so-t.done{border-color:#8dffb8}" +
+  ".so-b{border-radius:50%;margin:2px 0;box-shadow:inset -4px -5px 0 rgba(0,0,0,.2),inset 3px 3px 0 rgba(255,255,255,.35);display:flex;display:-webkit-flex;align-items:center;-webkit-align-items:center;justify-content:center;-webkit-justify-content:center;color:rgba(255,255,255,.75);font-family:Arial,sans-serif}");
+function sortStart(o){
+  var CAP = 4, level = o.lv === 1 ? 1 : o.lv === 2 ? 4 : 7, score = 0, solvedN = 0, tubes, sel = -1, hist = [], extraUsed = false, moves = 0, done = false;
+  var root = $("gstage"), wrap = el("div", "lb-wrap"), area = el("div", "so-area"), msg = el("div", "lb-msg"), bar = el("div", "life-bar");
+  wrap.appendChild(area); wrap.appendChild(msg); wrap.appendChild(bar); root.appendChild(wrap);
+  bar.appendChild(mkbtn("تراجع", "btn small alt", undo)); bar.appendChild(mkbtn("إعادة المرحلة", "btn small alt", function(){ build(true); }));
+  var exB = mkbtn("أنبوب إضافي", "btn small alt", function(){ if(extraUsed || done) return; extraUsed = true; tubes.push([]); hist = []; draw(); setText(msg, "أضفنا أنبوباً فارغاً (مرة واحدة لكل مرحلة)"); }); bar.appendChild(exB);
+  var startTubes = null;
+  function colorsFor(lv){ return Math.min(9, 2 + lv); }
+  function build(same){
+    var k = colorsFor(level), i, j, balls = [];
+    if(!same || !startTubes){
+      do{
+        balls = []; for(i = 0; i < k; i++) for(j = 0; j < CAP; j++) balls.push(i);
+        balls = shuffle(balls); startTubes = [];
+        for(i = 0; i < k; i++) startTubes.push(balls.slice(i * CAP, i * CAP + CAP));
+        startTubes.push([]); startTubes.push([]);
+      }while(solved(startTubes));
+    }
+    tubes = startTubes.map(function(t){ return t.slice(0); }); sel = -1; hist = []; extraUsed = false; moves = 0; done = false;
+    setText(msg, "المرحلة " + level + ": اضغط أنبوباً ثم اضغط أنبوباً آخر لنقل الكرة"); msg.style.color = "#ffe08a"; draw();
+  }
+  function solved(ts){ for(var i = 0; i < ts.length; i++){ var t = ts[i]; if(!t.length) continue; if(t.length !== CAP) return false; for(var j = 1; j < t.length; j++) if(t[j] !== t[0]) return false; } return true; }
+  function draw(){
+    clearKids(area);
+    var n = tubes.length, w = Math.max(34, Math.min(58, Math.floor((Math.min(window.innerWidth, 720) - 20) / Math.min(n, 7)) - 16)), bs = w - 10;
+    for(var i = 0; i < n; i++){
+      (function(i){
+        var t = tubes[i], d = el("div", "so-t" + (i === sel ? " sel" : "") + (t.length === CAP && t.every(function(x){ return x === t[0]; }) ? " done" : ""));
+        d.style.width = w + "px"; d.style.height = (CAP * (bs + 4) + 14) + "px";
+        for(var j = 0; j < t.length; j++){ var b = el("div", "so-b", SO_SYM[t[j]]); b.style.width = bs + "px"; b.style.height = bs + "px"; b.style.background = SO_COL[t[j]]; b.style.fontSize = Math.round(bs * 0.45) + "px"; d.appendChild(b); }
+        d.onclick = function(){ tap(i); };
+        area.appendChild(d);
+      })(i);
+    }
+    exB.style.opacity = extraUsed ? ".4" : "";
+    setHud(chip("المرحلة", level) + chip("النقاط", score) + chip("الحركات", moves), true);
+  }
+  function tap(i){
+    if(done) return;
+    if(sel < 0){ if(tubes[i].length){ sel = i; beep(500, 40); } draw(); return; }
+    if(sel === i){ sel = -1; draw(); return; }
+    var a = tubes[sel], b = tubes[i], top = a[a.length - 1];
+    if(b.length >= CAP || (b.length && b[b.length - 1] !== top)){ beep(200, 120, "square"); sel = tubes[i].length ? i : -1; draw(); return; }
+    hist.push(tubes.map(function(t){ return t.slice(0); }));
+    while(a.length && a[a.length - 1] === top && b.length < CAP) b.push(a.pop());
+    sel = -1; moves++; beep(620, 50); draw();
+    if(solved(tubes)){
+      done = true; solvedN++; var pts = 20 + colorsFor(level) * 10 + (extraUsed ? 0 : 20); score += pts;
+      setText(msg, "أحسنت! أنهيت المرحلة +" + pts); msg.style.color = "#8dffb8"; beep(760, 100); setTimeout(function(){ beep(1020, 200); }, 110);
+      gTimeout(function(){ level++; startTubes = null; build(false); }, 1600);
+    }
+  }
+  function undo(){ if(done || !hist.length) return; tubes = hist.pop(); sel = -1; moves++; draw(); }
+  G.finishFn = function(){ endGame(score, "أنهيت " + solvedN + " مراحل ووصلت إلى المرحلة " + level); };
+  build(false);
+}
+labReg({id:"sort", name:"فرز الألوان", tag:"تفكير", sd:"رتّب الكرات حتى يصير كل أنبوب بلون واحد", start:sortStart,
+  icon:'<path d="M10 10V50Q10 58 17 58Q24 58 24 50V10" fill="none" stroke="#fff" stroke-width="3"/><path d="M40 10V50Q40 58 47 58Q54 58 54 50V10" fill="none" stroke="#fff" stroke-width="3"/><circle cx="17" cy="50" r="5" fill="#e74c3c"/><circle cx="17" cy="39" r="5" fill="#3498db"/><circle cx="17" cy="28" r="5" fill="#e74c3c"/><circle cx="47" cy="50" r="5" fill="#3498db"/><circle cx="47" cy="39" r="5" fill="#f1c40f"/>',
+  desc:"كرات ملونة مختلطة في الأنابيب: انقلها حتى يحتوي كل أنبوب على لون واحد فقط.",
+  instr:["اضغط على أنبوب لترفع كرته العليا، ثم اضغط على أنبوب آخر لتضعها فيه.",
+         "يمكن وضع الكرة فوق كرة من نفس لونها فقط، أو في أنبوب فارغ. كل أنبوب يتسع لأربع كرات.",
+         "لكل لون شكل صغير مرسوم على الكرة ليسهل التمييز بين الألوان.",
+         "يمكنك التراجع عن الحركات، أو إضافة أنبوب فارغ مرة واحدة في كل مرحلة. المراحل تزداد ألواناً كلما تقدمت."],
+  options:[{key:"lv", label:"البداية", choices:[["من المرحلة 1",1],["من المرحلة 4",2],["من المرحلة 7",3]]}]});
+
+/* =====================================================================
+   10) توصيل البلاطات (خط فيه منعطفان على الأكثر)
+   ===================================================================== */
+var ON_EMO = ["🐶","🐱","🐰","🦊","🐼","🐸","🐵","🦁","🐯","🐨","🐷","🐮","🐔","🐧","🐢","🐙","🦋","🐝","🍎","🍌","🍇","🍓","🍉","🍒","🌻","⭐","⚽","🎈"];
+function onetStart(o){
+  var L = o.lv, COLS = [0, 8, 10, 12][L], ROWS = [0, 5, 6, 7][L], TIME = [0, 240, 300, 360][L];
+  makeCanvas();
+  var ctx = G.ctx, GW = COLS + 2, GH = ROWS + 2, S = Math.floor(Math.min(CW / GW, (CH - 10) / GH)), OX = (CW - S * GW) / 2, OY = (CH - S * GH) / 2 + 4;
+  var g = [], sel = null, path = null, pathT = 0, score = 0, pairs = 0, total = COLS * ROWS / 2, t0 = now(), ended = false, hint = null, combo = 0, lastT = 0, popups = [], shuffles = 0;
+  function init(){
+    var types = shuffle(ON_EMO.slice(0)).slice(0, Math.min(ON_EMO.length, Math.ceil(total / 2))), arr = [], i, r, c;
+    for(i = 0; i < total; i++){ var e = types[i % types.length]; arr.push(e); arr.push(e); }
+    arr = shuffle(arr); i = 0;
+    for(r = 0; r < GH; r++){ g.push([]); for(c = 0; c < GW; c++) g[r].push(r === 0 || c === 0 || r === GH - 1 || c === GW - 1 ? null : arr[i++]); }
+    ensureMoves();
+  }
+  /* بحث بالعرض عن مسار بمنعطفين على الأكثر عبر الخانات الفارغة */
+  function findPath(a, b){
+    if(g[a[0]][a[1]] !== g[b[0]][b[1]] || (a[0] === b[0] && a[1] === b[1])) return null;
+    var D = [[0,1],[1,0],[0,-1],[-1,0]], best = {}, q = [], d, k;
+    for(d = 0; d < 4; d++) q.push({r:a[0], c:a[1], d:d, t:0, p:[[a[0], a[1]]]});
+    while(q.length){
+      var s = q.shift(), nr = s.r + D[s.d][0], nc = s.c + D[s.d][1];
+      if(nr < 0 || nc < 0 || nr >= GH || nc >= GW) continue;
+      var np = s.p.concat([[nr, nc]]);
+      if(nr === b[0] && nc === b[1]) return np;
+      if(g[nr][nc]) continue;
+      for(k = 0; k < 4; k++){
+        if((k + 2) % 4 === s.d) continue;
+        var nt = s.t + (k === s.d ? 0 : 1); if(nt > 2) continue;
+        var key = nr + "," + nc + "," + k; if(best[key] !== undefined && best[key] <= nt) continue; best[key] = nt;
+        q.push({r:nr, c:nc, d:k, t:nt, p:np});
+      }
+    }
+    return null;
+  }
+  function anyMove(){
+    var cells = [], r, c, i, j;
+    for(r = 1; r < GH - 1; r++) for(c = 1; c < GW - 1; c++) if(g[r][c]) cells.push([r, c]);
+    for(i = 0; i < cells.length; i++) for(j = i + 1; j < cells.length; j++){ if(g[cells[i][0]][cells[i][1]] === g[cells[j][0]][cells[j][1]] && findPath(cells[i], cells[j])) return [cells[i], cells[j]]; }
+    return null;
+  }
+  function reshuffle(){
+    var cells = [], vals = [], r, c, i;
+    for(r = 1; r < GH - 1; r++) for(c = 1; c < GW - 1; c++) if(g[r][c]){ cells.push([r, c]); vals.push(g[r][c]); }
+    vals = shuffle(vals); for(i = 0; i < cells.length; i++) g[cells[i][0]][cells[i][1]] = vals[i];
+  }
+  function ensureMoves(){ var n = 0; while(pairs < total && !anyMove() && n < 50){ reshuffle(); n++; } }
+  function cellAt(p){ var c = Math.floor((p.x - OX) / S), r = Math.floor((p.y - OY) / S); if(r < 1 || c < 1 || r >= GH - 1 || c >= GW - 1 || !g[r][c]) return null; return [r, c]; }
+  gListen(G.canvas, "mousedown", function(e){
+    if(ended) return; var cl = cellAt(canvasPos(e)); if(!cl) return;
+    if(!sel){ sel = cl; beep(500, 30); return; }
+    if(sel[0] === cl[0] && sel[1] === cl[1]){ sel = null; return; }
+    var pth = findPath(sel, cl);
+    if(pth){
+      var e2 = g[cl[0]][cl[1]]; path = pth; pathT = 0.35; g[sel[0]][sel[1]] = null; g[cl[0]][cl[1]] = null; pairs++; hint = null;
+      var tn = (now() - lastT) / 1000; combo = tn < 3 ? combo + 1 : 1; lastT = now();
+      var pts = 10 * Math.min(combo, 5); score += pts;
+      popups.push({x:OX + (cl[1] + 0.5) * S, y:OY + cl[0] * S, t:0, s:"+" + pts + (combo > 1 ? " ×" + Math.min(combo, 5) : ""), c:"#8dffb8"});
+      beep(700 + Math.min(combo, 6) * 60, 60); sel = null;
+      if(pairs === total){ ended = true; var bonus = Math.max(0, Math.round(TIME - (now() - t0) / 1000)) * 2; score += bonus; gTimeout(function(){ endGame(score, "أنهيت كل البلاطات! مكافأة الوقت +" + bonus); }, 900); }
+      else if(!anyMove()){ shuffles++; ensureMoves(); popups.push({x:CW / 2, y:CH / 2, t:0, s:"خلط البلاطات!", c:"#ffc83d"}); }
+    }else{ if(g[sel[0]][sel[1]] === g[cl[0]][cl[1]]) beep(200, 120, "square"); sel = cl; }
+  });
+  var bar = el("div", "life-bar");
+  bar.appendChild(mkbtn("تلميح (-15)", "btn small alt", function(){ if(ended) return; hint = anyMove(); score = Math.max(0, score - 15); }));
+  bar.appendChild(mkbtn("خلط (-10)", "btn small alt", function(){ if(ended) return; reshuffle(); ensureMoves(); sel = null; hint = null; score = Math.max(0, score - 10); }));
+  $("gstage").appendChild(bar);
+  init();
+  gLoop(function(dt){
+    var r, c, left = TIME - (now() - t0) / 1000;
+    if(!ended && left <= 0){ ended = true; endGame(score, "انتهى الوقت | وصّلت " + pairs + " من " + total + " زوجاً"); return; }
+    ctx.fillStyle = "#1b4d3e"; ctx.fillRect(0, 0, CW, CH);
+    for(r = 1; r < GH - 1; r++) for(c = 1; c < GW - 1; c++){
+      var x = OX + c * S, y = OY + r * S, v = g[r][c]; if(!v) continue;
+      var isSel = sel && sel[0] === r && sel[1] === c, isH = hint && ((hint[0][0] === r && hint[0][1] === c) || (hint[1][0] === r && hint[1][1] === c)) && Math.floor(now() / 300) % 2;
+      ctx.fillStyle = "#c9a76b"; roundRect(ctx, x + 2, y + 4, S - 4, S - 4, 8); ctx.fill();
+      ctx.fillStyle = isSel ? "#ffe08a" : isH ? "#8dffb8" : "#fdf3dc"; roundRect(ctx, x + 2, y + 1, S - 4, S - 6, 8); ctx.fill();
+      ctx.fillStyle = "#000"; emo(ctx, v, x + S / 2, y + S / 2 - 1, Math.round(S * 0.62));
+    }
+    if(path && pathT > 0){
+      pathT -= dt; ctx.strokeStyle = "#ffc83d"; ctx.lineWidth = 5; ctx.lineJoin = "round"; ctx.beginPath();
+      for(var i = 0; i < path.length; i++){ var px = OX + (path[i][1] + 0.5) * S, py = OY + (path[i][0] + 0.5) * S; if(i) ctx.lineTo(px, py); else ctx.moveTo(px, py); }
+      ctx.stroke();
+    }
+    drawPopups(ctx, popups, dt);
+    setHud(chip("الوقت", fmt(Math.max(0, left))) + chip("النقاط", score) + chip("الأزواج", pairs + "/" + total), true);
+  });
+  G.finishFn = function(){ if(!ended){ ended = true; endGame(score, "وصّلت " + pairs + " من " + total + " زوجاً"); } };
+}
+labReg({id:"onet", name:"توصيل البلاطات", tag:"تفكير", sd:"صِل كل صورتين متطابقتين بخط", start:onetStart,
+  icon:'<rect x="4" y="10" width="24" height="24" rx="5" fill="#fdf3dc"/><rect x="36" y="30" width="24" height="24" rx="5" fill="#fdf3dc"/><text x="16" y="28" font-size="15" text-anchor="middle">🐼</text><text x="48" y="48" font-size="15" text-anchor="middle">🐼</text><path d="M28 22H48V30" stroke="#ffc83d" stroke-width="3" fill="none"/>',
+  desc:"أزل البلاطات المتطابقة بتوصيل كل اثنتين بخط لا ينعطف أكثر من مرتين، وأفرغ اللوحة قبل انتهاء الوقت.",
+  instr:["اضغط على بلاطة ثم على بلاطة مطابقة لها: إذا أمكن توصيلهما بخط يمر في الفراغات ولا ينعطف أكثر من مرتين تختفيان.",
+         "يمكن للخط أن يمر حول حافة اللوحة من الخارج.",
+         "التوصيل السريع المتتالي يضاعف النقاط حتى ×5. إذا لم تبقَ حركات ممكنة تُخلط البلاطات تلقائياً.",
+         "زر التلميح يضيء زوجاً ممكناً، وزر الخلط يعيد ترتيب البلاطات. أفرغ اللوحة لتحصل على مكافأة الوقت."],
+  options:[{key:"lv", label:"حجم اللوحة", choices:[["صغيرة - 40 بلاطة",1],["متوسطة - 60 بلاطة",2],["كبيرة - 84 بلاطة",3]]}]});
+
+/* =====================================================================
+   11) توصيل الألوان (املأ الشبكة بخطوط لا تتقاطع)
+   ===================================================================== */
+var FL_COL = ["#e74c3c","#3498db","#2ecc71","#f1c40f","#e67e22","#9b59b6","#1abc9c","#ff7ac8","#8b5a2b","#ecf0f1","#7f8c8d","#00e5ff"];
+/* مسار هاملتوني عشوائي بطريقة «العضّة الخلفية» ثم تقطيعه إلى ألوان */
+function flGen(n){
+  var path = [], r, c, i;
+  for(r = 0; r < n; r++) for(c = 0; c < n; c++) path.push([r, r % 2 ? n - 1 - c : c]);
+  var idx = {}; function key(p){ return p[0] * n + p[1]; }
+  function reindex(){ idx = {}; for(var k = 0; k < path.length; k++) idx[key(path[k])] = k; }
+  reindex();
+  var iters = n * n * 30;
+  for(i = 0; i < iters; i++){
+    if(Math.random() < 0.5) path.reverse(), reindex();
+    var end = path[path.length - 1], nb = [[end[0] + 1, end[1]], [end[0] - 1, end[1]], [end[0], end[1] + 1], [end[0], end[1] - 1]].filter(function(p){ return p[0] >= 0 && p[1] >= 0 && p[0] < n && p[1] < n; });
+    var q = pick(nb), j = idx[key(q)];
+    if(j === path.length - 2) continue;
+    var tail = path.slice(j + 1).reverse(); path = path.slice(0, j + 1).concat(tail); reindex();
+  }
+  var k = n + rint(-1, 1), lens = [], left = n * n, minL = 3;
+  for(i = 0; i < k; i++){ var rest = k - i - 1, mx = left - rest * minL; var l = i === k - 1 ? left : rint(minL, Math.max(minL, Math.min(mx, Math.ceil(n * n / k * 1.6)))); lens.push(l); left -= l; }
+  var segs = [], p0 = 0; for(i = 0; i < lens.length; i++){ segs.push(path.slice(p0, p0 + lens[i])); p0 += lens[i]; }
+  return segs;
+}
+function flowStart(o){
+  var n = o.n, puzzles = 5, pi = 0, score = 0;
+  makeCanvas();
+  var ctx = G.ctx, S, OX, OY, segs, ends, paths, owner, drawing = -1, solvedN = 0, t0 = 0, state = "play", popups = [], moves = 0;
+  function setup(){
+    segs = flGen(n); ends = {}; paths = []; owner = {}; drawing = -1; state = "play"; t0 = now(); moves = 0;
+    S = Math.floor(Math.min((CW - 40) / n, (CH - 30) / n)); OX = (CW - S * n) / 2; OY = (CH - S * n) / 2;
+    for(var i = 0; i < segs.length; i++){ var a = segs[i][0], b = segs[i][segs[i].length - 1]; ends[a[0] + "," + a[1]] = i; ends[b[0] + "," + b[1]] = i; paths.push([]); }
+  }
+  function k(p){ return p[0] + "," + p[1]; }
+  function rebuildOwner(){ owner = {}; for(var i = 0; i < paths.length; i++) for(var j = 0; j < paths[i].length; j++) owner[k(paths[i][j])] = i; }
+  function cellAt(p){ var c = Math.floor((p.x - OX) / S), r = Math.floor((p.y - OY) / S); return (r < 0 || c < 0 || r >= n || c >= n) ? null : [r, c]; }
+  function connected(i){ var p = paths[i]; if(p.length < 2) return false; var a = p[0], b = p[p.length - 1]; return ends[k(a)] === i && ends[k(b)] === i && k(a) !== k(b); }
+  function cutAt(i, cell){ var p = paths[i]; for(var j = 0; j < p.length; j++) if(k(p[j]) === k(cell)){ paths[i] = p.slice(0, j); return; } }
+  function start(cell){
+    var e = ends[k(cell)], o2 = owner[k(cell)];
+    if(e !== undefined){ paths[e] = [cell]; drawing = e; }
+    else if(o2 !== undefined){ cutAt(o2, cell); paths[o2].push(cell); drawing = o2; }
+    else return;
+    rebuildOwner();
+  }
+  function extend(cell){
+    if(drawing < 0) return; var p = paths[drawing], last = p[p.length - 1];
+    if(k(last) === k(cell)) return;
+    if(Math.abs(last[0] - cell[0]) + Math.abs(last[1] - cell[1]) !== 1){
+      /* قفزة: نتحرك خطوة نحو الخانة */
+      var dr = cell[0] - last[0], dc = cell[1] - last[1];
+      if(Math.abs(dr) > Math.abs(dc)) extend([last[0] + (dr > 0 ? 1 : -1), last[1]]); else extend([last[0], last[1] + (dc > 0 ? 1 : -1)]);
+      p = paths[drawing]; last = p[p.length - 1]; if(Math.abs(last[0] - cell[0]) + Math.abs(last[1] - cell[1]) !== 1 || k(last) === k(cell)) return;
+    }
+    if(p.length > 1 && k(p[p.length - 2]) === k(cell)){ p.pop(); rebuildOwner(); return; }
+    if(connected(drawing)) return;
+    var e = ends[k(cell)];
+    if(e !== undefined && e !== drawing) return;
+    for(var j = 0; j < p.length; j++) if(k(p[j]) === k(cell)){ paths[drawing] = p.slice(0, j + 1); rebuildOwner(); return; }
+    var o2 = owner[k(cell)]; if(o2 !== undefined && o2 !== drawing) cutAt(o2, cell);
+    p.push(cell); rebuildOwner(); beep(300 + drawing * 40, 20);
+  }
+  function check(){
+    var all = true, filled = 0, i; for(i = 0; i < paths.length; i++) if(!connected(i)) all = false;
+    for(var q in owner) filled++;
+    if(all && filled === n * n){
+      state = "won"; solvedN++; var secs = (now() - t0) / 1000, pts = n * 15 + Math.max(0, Math.round(n * 12 - secs)); score += pts;
+      popups.push({x:CW / 2, y:CH / 2, t:0, s:"أحسنت! +" + pts, c:"#8dffb8"}); beep(760, 100); setTimeout(function(){ beep(1020, 200); }, 110);
+      gTimeout(function(){ pi++; if(pi >= puzzles) finish(); else setup(); }, 1400);
+    }else if(all){ popups.push({x:CW / 2, y:30, t:0, s:"وصّلت كل الألوان! املأ المربعات الفارغة أيضاً", c:"#ffe08a"}); }
+  }
+  ptr(G.canvas, function(e){ if(state !== "play") return; var c = cellAt(canvasPos(e)); if(c) start(c); }, function(e){ if(drawing < 0 || state !== "play") return; var c = cellAt(canvasPos(e)); if(c) extend(c); }, function(){ if(drawing >= 0){ drawing = -1; moves++; check(); } });
+  var bar = el("div", "life-bar");
+  bar.appendChild(mkbtn("مسح الكل", "btn small alt", function(){ if(state !== "play") return; for(var i = 0; i < paths.length; i++) paths[i] = []; rebuildOwner(); }));
+  bar.appendChild(mkbtn("تخطي اللغز", "btn small alt", function(){ if(state !== "play") return; pi++; if(pi >= puzzles) finish(); else setup(); }));
+  $("gstage").appendChild(bar);
+  function finish(){ state = "over"; endGame(score, "حللت " + solvedN + " من " + puzzles + " ألغاز بحجم " + n + "×" + n); }
+  G.finishFn = finish; setup();
+  gLoop(function(dt){
+    var r, c, i, j;
+    ctx.fillStyle = "#0e0e22"; ctx.fillRect(0, 0, CW, CH);
+    for(i = 0; i < paths.length; i++) if(connected(i)) for(j = 0; j < paths[i].length; j++){ ctx.fillStyle = FL_COL[i]; ctx.globalAlpha = 0.18; ctx.fillRect(OX + paths[i][j][1] * S, OY + paths[i][j][0] * S, S, S); ctx.globalAlpha = 1; }
+    ctx.strokeStyle = "#3a3a66"; ctx.lineWidth = 2;
+    for(r = 0; r <= n; r++){ ctx.beginPath(); ctx.moveTo(OX, OY + r * S); ctx.lineTo(OX + n * S, OY + r * S); ctx.stroke(); }
+    for(c = 0; c <= n; c++){ ctx.beginPath(); ctx.moveTo(OX + c * S, OY); ctx.lineTo(OX + c * S, OY + n * S); ctx.stroke(); }
+    ctx.lineCap = "round"; ctx.lineJoin = "round";
+    for(i = 0; i < paths.length; i++){ var p = paths[i]; if(p.length < 2) continue; ctx.strokeStyle = FL_COL[i]; ctx.lineWidth = S * 0.34; ctx.beginPath();
+      for(j = 0; j < p.length; j++){ var x = OX + (p[j][1] + 0.5) * S, y = OY + (p[j][0] + 0.5) * S; if(j) ctx.lineTo(x, y); else ctx.moveTo(x, y); } ctx.stroke(); }
+    for(var q in ends){ var rc = q.split(","), ci = ends[q], cx = OX + (+rc[1] + 0.5) * S, cy = OY + (+rc[0] + 0.5) * S;
+      ctx.fillStyle = FL_COL[ci]; ctx.beginPath(); ctx.arc(cx, cy, S * 0.36, 0, 6.2832); ctx.fill();
+      if(connected(ci)){ ctx.strokeStyle = "#fff"; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(cx, cy, S * 0.36, 0, 6.2832); ctx.stroke(); } }
+    drawPopups(ctx, popups, dt);
+    var con = 0, fl = 0; for(i = 0; i < paths.length; i++) if(connected(i)) con++; for(var q2 in owner) fl++;
+    setHud(chip("اللغز", Math.min(pi + 1, puzzles) + "/" + puzzles) + chip("النقاط", score) + chip("الألوان", con + "/" + paths.length) + chip("الامتلاء", Math.round(fl / (n * n) * 100) + "%"), true);
+  });
+}
+labReg({id:"flow", name:"توصيل الألوان", tag:"تفكير", sd:"صِل النقاط المتشابهة واملأ الشبكة", start:flowStart,
+  icon:'<rect x="4" y="4" width="56" height="56" rx="6" fill="#0e0e22"/><path d="M14 14H50V30H14V50H40" stroke="#e74c3c" stroke-width="7" fill="none" stroke-linecap="round" stroke-linejoin="round"/><circle cx="14" cy="14" r="6" fill="#e74c3c"/><circle cx="40" cy="50" r="6" fill="#e74c3c"/><circle cx="50" cy="50" r="6" fill="#3498db"/>',
+  desc:"صِل كل نقطتين من نفس اللون بخط، دون أن تتقاطع الخطوط، حتى تمتلئ الشبكة كلها.",
+  instr:["اضغط على نقطة ملونة واسحب إصبعك عبر المربعات حتى تصل إلى النقطة الأخرى من نفس اللون.",
+         "لا يمكن أن تتقاطع الخطوط. إذا مررت فوق خط آخر يُقطع ذلك الخط.",
+         "يكتمل اللغز عندما تتصل كل الألوان وتمتلئ كل المربعات.",
+         "5 ألغاز في كل لعبة. اختر حجم الشبكة حسب مستواك."],
+  options:[{key:"n", label:"حجم الشبكة", choices:[["5×5 - سهل",5],["6×6 - متوسط",6],["7×7 - صعب",7],["8×8 - خبير",8]]}]});
+
+/* =====================================================================
+   12) زحمة الموقف (أخرج السيارة الحمراء)
+   ===================================================================== */
+function rhSolve(cars, limit){
+  /* بحث بالعرض: يعيد أقل عدد حركات، أو -1 */
+  function enc(cs){ var s = ""; for(var i = 0; i < cs.length; i++) s += String.fromCharCode(65 + (cars[i].h ? cs[i] : cs[i])); return s; }
+  var start = cars.map(function(c){ return c.h ? c.c : c.r; }), seen = {}, q = [start], depth = [0], qi = 0;
+  seen[enc(start)] = 1;
+  while(qi < q.length){
+    var st = q[qi], d = depth[qi]; qi++;
+    if(st[0] + cars[0].len === 6) return d;
+    if(qi > limit) return -2;
+    var occ = []; for(var z = 0; z < 36; z++) occ.push(-1);
+    for(var i = 0; i < cars.length; i++){ var cr = cars[i]; for(var k = 0; k < cr.len; k++){ var r = cr.h ? cr.r : st[i] + k, c = cr.h ? st[i] + k : cr.c; occ[r * 6 + c] = i; } }
+    for(i = 0; i < cars.length; i++){
+      cr = cars[i];
+      for(var dir = -1; dir <= 1; dir += 2){
+        for(var step = 1; step < 6; step++){
+          var np = st[i] + dir * step, edge = dir < 0 ? np : np + cr.len - 1;
+          if(edge < 0 || edge > 5) break;
+          var rr = cr.h ? cr.r : edge, cc = cr.h ? edge : cr.c;
+          if(occ[rr * 6 + cc] !== -1) break;
+          var ns = st.slice(0); ns[i] = np; var key = enc(ns);
+          if(!seen[key]){ seen[key] = 1; q.push(ns); depth.push(d + 1); }
+        }
+      }
+    }
+  }
+  return -1;
+}
+/* صنع لغز: نستكشف كل الأوضاع الممكنة من ترتيب عشوائي، ثم نحسب بُعد كل وضع عن الحل،
+   ونختار وضعاً بعدد الحركات المطلوب (للصعب نختار الأبعد) */
+function rhNeighbors(cars, st, cb){
+  var occ = [], i, z; for(z = 0; z < 36; z++) occ.push(-1);
+  for(i = 0; i < cars.length; i++){ var cr = cars[i]; for(var k = 0; k < cr.len; k++){ var r = cr.h ? cr.r : st[i] + k, c = cr.h ? st[i] + k : cr.c; occ[r * 6 + c] = i; } }
+  for(i = 0; i < cars.length; i++){ cr = cars[i];
+    for(var dir = -1; dir <= 1; dir += 2) for(var step = 1; step < 6; step++){
+      var np = st[i] + dir * step, edge = dir < 0 ? np : np + cr.len - 1; if(edge < 0 || edge > 5) break;
+      if(occ[(cr.h ? cr.r : edge) * 6 + (cr.h ? edge : cr.c)] !== -1) break;
+      var ns = st.slice(0); ns[i] = np; cb(ns);
+    } }
+}
+function rhAttempt(minM, maxM, best){
+  {
+    var cars = [{r:2, c:rint(0, 3), h:true, len:2, red:true}], grid = [], i, tries = 0, want = rint(9, 13);
+    for(i = 0; i < 36; i++) grid.push(0);
+    var put = function(cr){ var k, r, c; for(k = 0; k < cr.len; k++){ r = cr.h ? cr.r : cr.r + k; c = cr.h ? cr.c + k : cr.c; if(r > 5 || c > 5 || grid[r * 6 + c]) return false; }
+      for(k = 0; k < cr.len; k++){ r = cr.h ? cr.r : cr.r + k; c = cr.h ? cr.c + k : cr.c; grid[r * 6 + c] = 1; } return true; };
+    put(cars[0]);
+    while(cars.length < want && tries < 300){ tries++; var h = Math.random() < 0.5, cr = {h:h, len:Math.random() < 0.3 ? 3 : 2, r:rint(0, 5), c:rint(0, 5)}; if(h && cr.r === 2) continue; if(put(cr)) cars.push(cr); }
+    var start = cars.map(function(c){ return c.h ? c.c : c.r; }), keys = {}, states = [start], qi = 0;
+    keys[start.join(",")] = 0;
+    while(qi < states.length && states.length < 120000){ rhNeighbors(cars, states[qi], function(ns){ var k = ns.join(","); if(keys[k] === undefined){ keys[k] = states.length; states.push(ns); } }); qi++; }
+    if(states.length >= 120000) return {best:best};
+    var dist = new Int32Array(states.length), q = [], s2;
+    for(i = 0; i < states.length; i++){ dist[i] = -1; if(states[i][0] === 4){ dist[i] = 0; q.push(i); } }
+    if(!q.length) return {best:best};
+    for(qi = 0; qi < q.length; qi++){ s2 = q[qi]; rhNeighbors(cars, states[s2], function(ns){ var id = keys[ns.join(",")]; if(dist[id] < 0){ dist[id] = dist[s2] + 1; q.push(id); } }); }
+    var cand = [], mx = 0, mxI = -1;
+    for(i = 0; i < states.length; i++){ if(dist[i] >= minM && dist[i] <= maxM) cand.push(i); if(dist[i] > mx){ mx = dist[i]; mxI = i; } }
+    var pickI = cand.length ? (maxM >= 40 ? mxI : pick(cand)) : -1;
+    if(pickI >= 0 && dist[pickI] >= minM){
+      var stt = states[pickI], out = cars.map(function(c, k){ return {r:c.h ? c.r : stt[k], c:c.h ? stt[k] : c.c, h:c.h, len:c.len, red:!!c.red}; });
+      return {found:{cars:out, m:dist[pickI]}, best:best};
+    }
+    if(mxI >= 0 && (!best || mx > best.m)){ var st3 = states[mxI]; best = {cars:cars.map(function(c, k){ return {r:c.h ? c.r : st3[k], c:c.h ? st3[k] : c.c, h:c.h, len:c.len, red:!!c.red}; }), m:mx}; }
+  }
+  return {best:best};
+}
+/* يجرب محاولة واحدة في كل مرة دون تجميد الشاشة، حتى يجد لغزاً مناسباً أو تمضي 7 ثوانٍ */
+function rhGenAsync(minM, maxM, cb){
+  var t0 = now(), best = null;
+  function tick(){
+    if(!G.active) return;
+    var tEnd = now() + 120, r;
+    do{ r = rhAttempt(minM, maxM, best); best = r.best; if(r.found) return cb(r.found); }while(now() < tEnd);
+    if(now() - t0 > 7000) return cb(best || {cars:[{r:2, c:0, h:true, len:2, red:true}, {r:0, c:2, h:false, len:3}, {r:3, c:3, h:false, len:2}], m:2});
+    gTimeout(tick, 15);
+  }
+  gTimeout(tick, 30);
+}
+var RH_COL = ["#4c93dd","#2ecc71","#f1c40f","#9b59b6","#e67e22","#1abc9c","#ff7ac8","#95a5a6","#8b5a2b","#00bcd4","#cddc39","#ff8a65"];
+function parkStart(o){
+  var L = o.lv, RANGE = [[0,0],[4, 8],[9, 14],[15, 60]][L], N = 5, pi = 0, score = 0, solvedN = 0;
+  makeCanvas();
+  var initial = null, ctx = G.ctx, S = 72, OX = (CW - S * 6) / 2 - 40, OY = (CH - S * 6) / 2, cars, opt, moves, drag = null, state = "load", exitX = 0, popups = [], t0 = 0;
+  function setup(){ state = "load"; cars = null; rhGenAsync(RANGE[0], RANGE[1], function(P){ cars = P.cars.map(function(c, i){ return {r:c.r, c:c.c, h:c.h, len:c.len, red:i === 0, col:i ? RH_COL[(i - 1) % RH_COL.length] : "#e53935"}; }); opt = P.m; moves = 0; state = "play"; initial = cars.map(function(c){ return {r:c.r, c:c.c, h:c.h, len:c.len, red:c.red, col:c.col}; }); exitX = 0; t0 = now(); }); }
+  function occ(ex){ var g = {}; for(var i = 0; i < cars.length; i++){ if(i === ex) continue; var cr = cars[i]; for(var k = 0; k < cr.len; k++) g[(cr.h ? cr.r : cr.r + k) * 6 + (cr.h ? cr.c + k : cr.c)] = 1; } return g; }
+  function carAt(p){ var c = Math.floor((p.x - OX) / S), r = Math.floor((p.y - OY) / S); for(var i = 0; i < cars.length; i++){ var cr = cars[i]; for(var k = 0; k < cr.len; k++) if((cr.h ? cr.r : cr.r + k) === r && (cr.h ? cr.c + k : cr.c) === c) return i; } return -1; }
+  ptr(G.canvas, function(e){
+    if(state !== "play") return; var p = canvasPos(e), i = carAt(p); if(i < 0) return;
+    var cr = cars[i], g = occ(i), lo = cr.h ? cr.c : cr.r, hi = lo, k;
+    while(lo > 0 && !g[cr.h ? cr.r * 6 + lo - 1 : (lo - 1) * 6 + cr.c]) lo--;
+    while(hi + cr.len < 6 && !g[cr.h ? cr.r * 6 + hi + cr.len : (hi + cr.len) * 6 + cr.c]) hi++;
+    drag = {i:i, start:cr.h ? cr.c : cr.r, p0:cr.h ? p.x : p.y, lo:lo, hi:hi, off:0};
+  }, function(e){
+    if(!drag) return; var p = canvasPos(e), cr = cars[drag.i], v = ((cr.h ? p.x : p.y) - drag.p0) / S;
+    drag.off = Math.max(drag.lo - drag.start, Math.min(drag.hi - drag.start, v));
+  }, function(){
+    if(!drag) return; var cr = cars[drag.i], np = drag.start + Math.round(drag.off);
+    if(np !== drag.start){ moves++; beep(420, 40); } if(cr.h) cr.c = np; else cr.r = np; drag = null;
+    if(cars[0].c + 2 === 6){ state = "exit"; beep(700, 80); setTimeout(function(){ beep(940, 200); }, 90); }
+  });
+  var bar = el("div", "life-bar");
+  bar.appendChild(mkbtn("إعادة اللغز", "btn small alt", function(){ if(state === "play" && initial){ cars = initial.map(function(c){ return {r:c.r, c:c.c, h:c.h, len:c.len, red:c.red, col:c.col}; }); moves = 0; } }));
+  bar.appendChild(mkbtn("تخطي", "btn small alt", function(){ if(state === "play"){ pi++; if(pi >= N) finish(); else setup(); } }));
+  $("gstage").appendChild(bar);
+  function finish(){ state = "over"; endGame(score, "أخرجت السيارة في " + solvedN + " من " + N + " ألغاز"); }
+  G.finishFn = finish; setup();
+  gLoop(function(dt){
+    ctx.fillStyle = "#2b2b3a"; ctx.fillRect(0, 0, CW, CH);
+    ctx.fillStyle = "#555566"; roundRect(ctx, OX - 12, OY - 12, S * 6 + 24, S * 6 + 24, 16); ctx.fill();
+    ctx.fillStyle = "#3d3d4d"; ctx.fillRect(OX, OY, S * 6, S * 6);
+    ctx.strokeStyle = "rgba(255,255,255,.08)"; ctx.lineWidth = 2;
+    for(var i = 0; i <= 6; i++){ ctx.beginPath(); ctx.moveTo(OX + i * S, OY); ctx.lineTo(OX + i * S, OY + 6 * S); ctx.moveTo(OX, OY + i * S); ctx.lineTo(OX + 6 * S, OY + i * S); ctx.stroke(); }
+    ctx.fillStyle = "#3d3d4d"; ctx.fillRect(OX + 6 * S - 2, OY + 2 * S + 4, 24, S - 8);
+    ctx.fillStyle = "#8dffb8"; bigText(ctx, "خروج", OX + 6 * S + 56, OY + 2.5 * S, 22, "#8dffb8", "#1a1030");
+    ctx.beginPath(); ctx.moveTo(OX + 6 * S + 20, OY + 2.5 * S - 10); ctx.lineTo(OX + 6 * S + 34, OY + 2.5 * S); ctx.lineTo(OX + 6 * S + 20, OY + 2.5 * S + 10); ctx.fill();
+    if(state === "load"){ bigText(ctx, "تجهيز اللغز" + ["", ".", "..", "..."][Math.floor(now() / 300) % 4], CW / 2, CH / 2, 34, "#ffe08a", "#1a1030"); }
+    else if(cars){
+      if(state === "exit"){ exitX += dt * 900; if(exitX > 500 && state === "exit"){ state = "won"; solvedN++; var pts = Math.max(10, 50 + (opt - moves) * 5 + (L - 1) * 20); score += pts; popups.push({x:CW / 2, y:CH / 2, t:0, s:"خرجت! +" + pts, c:"#8dffb8"}); gTimeout(function(){ pi++; if(pi >= N) finish(); else setup(); }, 1200); } }
+      for(i = 0; i < cars.length; i++){
+        var cr = cars[i], off = drag && drag.i === i ? drag.off : 0, x = OX + (cr.h ? cr.c + off : cr.c) * S, y = OY + (cr.h ? cr.r : cr.r + off) * S, w = cr.h ? cr.len * S : S, h = cr.h ? S : cr.len * S;
+        if(i === 0 && (state === "exit" || state === "won")) x += exitX;
+        ctx.fillStyle = "rgba(0,0,0,.3)"; roundRect(ctx, x + 7, y + 9, w - 10, h - 10, 12); ctx.fill();
+        ctx.fillStyle = cr.col; roundRect(ctx, x + 5, y + 5, w - 10, h - 10, 12); ctx.fill();
+        ctx.fillStyle = "rgba(190,230,255,.85)";
+        if(cr.h){ ctx.fillRect(x + w - 30, y + 14, 10, h - 28); ctx.fillRect(x + 16, y + 14, 8, h - 28); } else { ctx.fillRect(x + 14, y + 16, w - 28, 8); ctx.fillRect(x + 14, y + h - 30, w - 28, 10); }
+        if(cr.red) bigText(ctx, "أنا", x + w / 2, y + h / 2, 20, "#fff");
+      }
+    }
+    drawPopups(ctx, popups, dt);
+    setHud(chip("اللغز", Math.min(pi + 1, N) + "/" + N) + chip("النقاط", score) + chip("حركاتك", moves || 0) + chip("أقل عدد ممكن", opt || "-"), true);
+  });
+}
+labReg({id:"park", name:"زحمة الموقف", tag:"تفكير", sd:"حرّك السيارات لتُخرج السيارة الحمراء", start:parkStart,
+  icon:'<rect x="4" y="4" width="56" height="56" rx="6" fill="#3d3d4d"/><rect x="8" y="24" width="30" height="14" rx="4" fill="#e53935"/><rect x="42" y="8" width="14" height="30" rx="4" fill="#4c93dd"/><rect x="8" y="44" width="30" height="12" rx="4" fill="#f1c40f"/><path d="M58 31L62 28V34Z" fill="#8dffb8"/>',
+  desc:"الموقف مزدحم! حرّك السيارات للأمام والخلف لتفتح طريقاً للسيارة الحمراء نحو المخرج.",
+  instr:["اسحب أي سيارة بإصبعك في اتجاهها فقط: السيارات الأفقية يميناً ويساراً، والعمودية أعلى وأسفل.",
+         "الهدف أن تصل السيارة الحمراء («أنا») إلى المخرج على اليمين.",
+         "يظهر أقل عدد ممكن من الحركات: كلما اقتربت منه زادت نقاطك.",
+         "5 ألغاز تُصنع عشوائياً في كل لعبة، وكل لغز له حل مضمون."],
+  options:[{key:"lv", label:"المستوى", choices:[["سهل",1],["متوسط",2],["صعب",3]]}]});
+
+/* =====================================================================
+   13) ألغاز المكعبات (ضع الأشكال وأكمل الصفوف والأعمدة)
+   ===================================================================== */
+var BK_SHAPES = [[[0,0]],[[0,0],[0,1]],[[0,0],[1,0]],[[0,0],[0,1],[0,2]],[[0,0],[1,0],[2,0]],[[0,0],[0,1],[0,2],[0,3]],[[0,0],[1,0],[2,0],[3,0]],
+  [[0,0],[0,1],[0,2],[0,3],[0,4]],[[0,0],[1,0],[2,0],[3,0],[4,0]],[[0,0],[0,1],[1,0],[1,1]],[[0,0],[0,1],[0,2],[1,0],[1,1],[1,2],[2,0],[2,1],[2,2]],
+  [[0,0],[1,0],[1,1]],[[0,1],[1,0],[1,1]],[[0,0],[0,1],[1,0]],[[0,0],[0,1],[1,1]],[[0,0],[1,0],[2,0],[2,1]],[[0,1],[1,1],[2,1],[2,0]],[[0,0],[0,1],[0,2],[1,1]],
+  [[0,0],[0,1],[1,1],[1,2]],[[0,1],[0,2],[1,0],[1,1]],[[0,0],[1,0],[2,0],[2,1],[2,2]],[[0,0],[0,1],[0,2],[1,0],[2,0]]];
+var BK_COL = ["#e74c3c","#3498db","#2ecc71","#f1c40f","#9b59b6","#e67e22","#1abc9c","#ff7ac8"];
+labCss(".bk-b{display:grid;margin:4px auto;background:#1b1440;border:3px solid #ffc83d;border-radius:10px;padding:3px;direction:ltr;touch-action:none}" +
+  ".bk-c{border-radius:5px;margin:1px;background:rgba(255,255,255,.07)}.bk-c.f{box-shadow:inset 0 -4px 0 rgba(0,0,0,.25),inset 0 3px 0 rgba(255,255,255,.3)}.bk-c.pv{background:rgba(141,255,184,.45)}.bk-c.pvbad{background:rgba(255,100,90,.35)}.bk-c.clr{background:#fff !important}" +
+  ".bk-tray{display:flex;display:-webkit-flex;justify-content:space-around;-webkit-justify-content:space-around;align-items:center;-webkit-align-items:center;margin:10px auto;max-width:520px;min-height:110px;direction:ltr}" +
+  ".bk-p{display:block;padding:8px;touch-action:none;cursor:grab;direction:ltr}.bk-p.off{opacity:.3}.bk-p i{display:block;border-radius:4px;box-shadow:inset 0 -3px 0 rgba(0,0,0,.25)}" +
+  ".bk-fly{position:fixed;z-index:10001;pointer-events:none;display:block;opacity:.9;direction:ltr}.bk-fly i{display:block;border-radius:5px;margin:1px;box-shadow:inset 0 -4px 0 rgba(0,0,0,.25)}");
+/* يبني الشكل بمربعات في أماكن ثابتة (يسار/أعلى) فلا يتأثر باتجاه الصفحة العربية */
+function bkPiece(box, sh, col, cell, gap){
+  var mr = 0, mc = 0, j; for(j = 0; j < sh.length; j++){ mr = Math.max(mr, sh[j][0]); mc = Math.max(mc, sh[j][1]); }
+  box.style.position = box.style.position || "relative"; box.style.direction = "ltr";
+  box.style.width = ((mc + 1) * cell) + "px"; box.style.height = ((mr + 1) * cell) + "px";
+  for(j = 0; j < sh.length; j++){ var q = document.createElement("i"); q.style.cssText = "position:absolute;display:block;border-radius:5px;box-shadow:inset 0 -4px 0 rgba(0,0,0,.25);left:" + (sh[j][1] * cell) + "px;top:" + (sh[j][0] * cell) + "px;width:" + (cell - gap) + "px;height:" + (cell - gap) + "px;background:" + col; box.appendChild(q); }
+}
+function blocksStart(o){
+  var N = 8, root = $("gstage"), wrap = el("div", "lb-wrap"), board = el("div", "bk-b"), tray = el("div", "bk-tray"), msg = el("div", "lb-msg");
+  wrap.appendChild(board); wrap.appendChild(msg); wrap.appendChild(tray); root.appendChild(wrap);
+  var sz = Math.min(430, Math.floor(Math.min(window.innerWidth * 0.92, window.innerHeight * 0.5))), cs = Math.floor((sz - 6) / N);
+  board.style.gridTemplateColumns = "repeat(" + N + "," + (cs - 2) + "px)";
+  var g = [], cells = [], pieces = [], score = 0, lines = 0, combo = 0, over = false, drag = null, LIFT = Math.round(cs * 2), r, c;
+  for(r = 0; r < N; r++){ g.push([]); for(c = 0; c < N; c++){ g[r].push(null); var d = el("div", "bk-c"); d.style.height = (cs - 2) + "px"; board.appendChild(d); cells.push(d); } }
+  function fits(sh, r0, c0){ for(var i = 0; i < sh.length; i++){ var rr = r0 + sh[i][0], cc = c0 + sh[i][1]; if(rr < 0 || cc < 0 || rr >= N || cc >= N || g[rr][cc]) return false; } return true; }
+  function canPlace(sh){ for(var rr = 0; rr < N; rr++) for(var cc = 0; cc < N; cc++) if(fits(sh, rr, cc)) return true; return false; }
+  function deal(){ pieces = []; for(var i = 0; i < 3; i++) pieces.push({sh:pick(BK_SHAPES), col:pick(BK_COL), used:false}); }
+  function draw(pv){
+    for(var i = 0; i < N * N; i++){ var rr = Math.floor(i / N), cc = i % N, v = g[rr][cc]; cells[i].className = "bk-c" + (v ? " f" : ""); cells[i].style.background = v || ""; }
+    if(pv) for(i = 0; i < pv.sh.length; i++){ var pr = pv.r + pv.sh[i][0], pc = pv.c + pv.sh[i][1]; if(pr < 0 || pc < 0 || pr >= N || pc >= N) continue; var k = pr * N + pc; cells[k].className = "bk-c " + (pv.ok ? "pv" : "pvbad"); cells[k].style.background = ""; }
+    if(pv !== undefined && pv !== false) return;   /* أثناء السحب نحدّث اللوحة فقط، ولا نعيد بناء الأشكال تحت الإصبع */
+    clearKids(tray);
+    for(i = 0; i < 3; i++) (function(i){
+      var p = pieces[i], box = el("div", "bk-p" + (p.used ? "" : canPlace(p.sh) ? "" : " off")), mini = Math.max(14, Math.floor(cs * 0.48)), mr = 0, mc = 0, j;
+      for(j = 0; j < p.sh.length; j++){ mr = Math.max(mr, p.sh[j][0]); mc = Math.max(mc, p.sh[j][1]); }
+      var holder = el("div"); holder.style.position = "relative";
+      if(!p.used) bkPiece(holder, p.sh, p.col, mini + 2, 2); else holder.style.width = "60px";
+      box.appendChild(holder);
+      ptr(box, function(e){ if(over || p.used) return; startDrag(i, e); }, function(e){ moveDrag(e); }, function(e){ endDrag(e); });
+      tray.appendChild(box);
+    })(i);
+    setHud(chip("النقاط", score) + chip("الصفوف المكتملة", lines) + chip("الأفضل", load("lab_blocks", 0)), true);
+  }
+  var fly = null;
+  function startDrag(i, e){
+    var p = pieces[i], mr = 0, mc = 0, j; for(j = 0; j < p.sh.length; j++){ mr = Math.max(mr, p.sh[j][0]); mc = Math.max(mc, p.sh[j][1]); }
+    drag = {i:i, p:p, mr:mr, mc:mc};
+    fly = el("div", "bk-fly"); fly.style.position = "fixed"; bkPiece(fly, p.sh, p.col, cs, 2);
+    document.body.appendChild(fly); moveDrag(e); beep(500, 30);
+  }
+  function target(e){
+    var rc = board.getBoundingClientRect(), x = e.clientX - (drag.mc + 1) * cs / 2, y = e.clientY - LIFT - (drag.mr + 1) * cs / 2;
+    return {c:Math.round((x - rc.left - 3) / cs), r:Math.round((y - rc.top - 3) / cs), x:x, y:y};
+  }
+  function moveDrag(e){
+    if(!drag) return; var t = target(e);
+    fly.style.left = t.x + "px"; fly.style.top = t.y + "px";
+    var inside = t.r > -3 && t.c > -3 && t.r < N + 2 && t.c < N + 2;
+    draw(inside ? {sh:drag.p.sh, r:t.r, c:t.c, ok:fits(drag.p.sh, t.r, t.c)} : null);
+  }
+  function endDrag(e){
+    if(!drag) return; var t = target(e), p = drag.p; drag = null; if(fly){ document.body.removeChild(fly); fly = null; }
+    if(!fits(p.sh, t.r, t.c)){ draw(); return; }
+    for(var j = 0; j < p.sh.length; j++) g[t.r + p.sh[j][0]][t.c + p.sh[j][1]] = p.col;
+    p.used = true; score += p.sh.length; beep(600, 40);
+    var fr = [], fc = [], rr, cc;
+    for(rr = 0; rr < N; rr++){ var ok = true; for(cc = 0; cc < N; cc++) if(!g[rr][cc]) ok = false; if(ok) fr.push(rr); }
+    for(cc = 0; cc < N; cc++){ ok = true; for(rr = 0; rr < N; rr++) if(!g[rr][cc]) ok = false; if(ok) fc.push(cc); }
+    var n = fr.length + fc.length;
+    if(n){
+      combo++; var pts = n * 10 * n * Math.min(combo, 5); score += pts; lines += n;
+      for(j = 0; j < fr.length; j++) for(cc = 0; cc < N; cc++) g[fr[j]][cc] = null;
+      for(j = 0; j < fc.length; j++) for(rr = 0; rr < N; rr++) g[rr][fc[j]] = null;
+      setText(msg, (n > 1 ? "رائع! " + n + " خطوط " : "خط مكتمل ") + "+" + pts + (combo > 1 ? " (سلسلة ×" + Math.min(combo, 5) + ")" : "")); msg.style.color = "#8dffb8";
+      beep(700, 80); setTimeout(function(){ beep(900 + n * 80, 140); }, 80);
+    }else { combo = 0; setText(msg, ""); }
+    if(pieces[0].used && pieces[1].used && pieces[2].used) deal();
+    if(score > load("lab_blocks", 0)) save("lab_blocks", score);
+    draw();
+    var any = false; for(j = 0; j < 3; j++) if(!pieces[j].used && canPlace(pieces[j].sh)) any = true;
+    if(!any){ over = true; setText(msg, "لا مكان لأي شكل!"); msg.style.color = "#ff9b8f"; beep(180, 300, "sawtooth"); gTimeout(finish, 1500); }
+  }
+  function finish(){ endGame(score, "الخطوط المكتملة: " + lines); }
+  G.finishFn = finish; deal(); draw();
+}
+labReg({id:"blocks", name:"ألغاز المكعبات", tag:"تفكير", sd:"ضع الأشكال وأكمل الصفوف", start:blocksStart,
+  icon:'<rect x="4" y="4" width="56" height="56" rx="6" fill="#1b1440"/><rect x="8" y="8" width="14" height="14" rx="3" fill="#e74c3c"/><rect x="22" y="8" width="14" height="14" rx="3" fill="#e74c3c"/><rect x="8" y="22" width="14" height="14" rx="3" fill="#e74c3c"/><rect x="8" y="42" width="48" height="14" rx="3" fill="#3498db"/><rect x="42" y="22" width="14" height="14" rx="3" fill="#2ecc71"/>',
+  desc:"اسحب الأشكال الملونة إلى اللوحة، وأكمل صفاً أو عموداً كاملاً ليختفي وتكسب النقاط.",
+  instr:["اسحب أي شكل من الأشكال الثلاثة تحت اللوحة وأفلته في مكان فارغ. يظهر الشكل فوق إصبعك حتى تراه، ويضيء مكانه بالأخضر.",
+         "إذا اكتمل صف أو عمود يختفي وتكسب نقاطاً، وإكمال عدة خطوط معاً أو بشكل متتالٍ يضاعف النقاط.",
+         "عندما تضع الأشكال الثلاثة تظهر ثلاثة أشكال جديدة. الشكل الباهت لا مكان له الآن.",
+         "تنتهي اللعبة عندما لا يتسع أي شكل في اللوحة."]});
+
+/* =====================================================================
+   14) فك التشابك (حرّك النقاط حتى لا يتقاطع أي خط)
+   ===================================================================== */
+function utGen(nl){
+  var lines = [], i, j, pts = [], idx = {};
+  for(i = 0; i < nl; i++){ var a = rnd(0, Math.PI); lines.push({px:rnd(-1, 1), py:rnd(-1, 1), dx:Math.cos(a), dy:Math.sin(a), on:[]}); }
+  for(i = 0; i < nl; i++) for(j = i + 1; j < nl; j++){
+    var A = lines[i], B = lines[j], den = A.dx * B.dy - A.dy * B.dx; if(Math.abs(den) < 1e-6) continue;
+    var t = ((B.px - A.px) * B.dy - (B.py - A.py) * B.dx) / den, s = ((B.px - A.px) * A.dy - (B.py - A.py) * A.dx) / den;
+    var v = pts.length; pts.push({x:A.px + A.dx * t, y:A.py + A.dy * t}); A.on.push([t, v]); B.on.push([s, v]);
+  }
+  var edges = [];
+  for(i = 0; i < nl; i++){ var on = lines[i].on.sort(function(a, b){ return a[0] - b[0]; }); for(j = 0; j + 1 < on.length; j++) edges.push([on[j][1], on[j + 1][1]]); }
+  return {n:pts.length, e:edges, sol:pts};
+}
+function segX(a, b, c, d){
+  function o(p, q, r){ return (q.x - p.x) * (r.y - p.y) - (q.y - p.y) * (r.x - p.x); }
+  var d1 = o(a, b, c), d2 = o(a, b, d), d3 = o(c, d, a), d4 = o(c, d, b);
+  return ((d1 > 0) !== (d2 > 0)) && ((d3 > 0) !== (d4 > 0)) && Math.abs(d1) > 1e-6 && Math.abs(d2) > 1e-6 && Math.abs(d3) > 1e-6 && Math.abs(d4) > 1e-6;
+}
+function untangleStart(o){
+  var lvls = o.lv === 1 ? [4, 5, 5] : o.lv === 2 ? [5, 6, 6] : [6, 7, 8], li = 0, score = 0;
+  makeCanvas();
+  var ctx = G.ctx, G2, P, drag = -1, state = "play", t0 = 0, moves = 0, popups = [], bad = [];
+  function setup(){
+    G2 = utGen(lvls[li]); P = []; var n = G2.n, i, ord = shuffle(range(n));
+    for(i = 0; i < n; i++){ var a = ord[i] / n * 6.2832; P.push({x:CW / 2 + Math.cos(a) * 200, y:CH / 2 + Math.sin(a) * 200}); }
+    t0 = now(); moves = 0; state = "play"; calc();
+    if(!bad.some(function(x){ return x; })) setup();
+  }
+  function calc(){
+    var e = G2.e, i, j, cnt = 0; bad = []; for(i = 0; i < e.length; i++) bad.push(false);
+    for(i = 0; i < e.length; i++) for(j = i + 1; j < e.length; j++){
+      var a = e[i], b = e[j]; if(a[0] === b[0] || a[0] === b[1] || a[1] === b[0] || a[1] === b[1]) continue;
+      if(segX(P[a[0]], P[a[1]], P[b[0]], P[b[1]])){ bad[i] = bad[j] = true; cnt++; }
+    }
+    return cnt;
+  }
+  ptr(G.canvas, function(e){ if(state !== "play") return; var p = canvasPos(e), best = -1, bd = 56; for(var i = 0; i < P.length; i++){ var d = Math.hypot(P[i].x - p.x, P[i].y - p.y); if(d < bd){ bd = d; best = i; } } drag = best; if(best >= 0) beep(500, 25); },
+    function(e){ if(drag < 0) return; var p = canvasPos(e); P[drag].x = Math.max(14, Math.min(CW - 14, p.x)); P[drag].y = Math.max(14, Math.min(CH - 14, p.y)); calc(); },
+    function(){ if(drag < 0) return; drag = -1; moves++;
+      if(calc() === 0){ state = "won"; var secs = (now() - t0) / 1000, pts = G2.n * 10 + Math.max(0, Math.round(G2.n * 8 - secs)); score += pts; popups.push({x:CW / 2, y:CH / 2, t:0, s:"فككت التشابك! +" + pts, c:"#8dffb8"}); beep(760, 100); setTimeout(function(){ beep(1020, 200); }, 110);
+        gTimeout(function(){ li++; if(li >= lvls.length) finish(); else setup(); }, 1500); } });
+  function finish(){ state = "over"; endGame(score, "فككت " + li + " من " + lvls.length + " أشكال"); }
+  G.finishFn = finish; setup();
+  gLoop(function(dt){
+    var i, e = G2.e, cnt = 0; for(i = 0; i < bad.length; i++) if(bad[i]) cnt++;
+    ctx.fillStyle = state === "won" ? "#123822" : "#101030"; ctx.fillRect(0, 0, CW, CH);
+    ctx.lineWidth = 4; ctx.lineCap = "round";
+    for(i = 0; i < e.length; i++){ ctx.strokeStyle = bad[i] ? "#ff6b6b" : "#8dffb8"; ctx.beginPath(); ctx.moveTo(P[e[i][0]].x, P[e[i][0]].y); ctx.lineTo(P[e[i][1]].x, P[e[i][1]].y); ctx.stroke(); }
+    for(i = 0; i < P.length; i++){ ctx.fillStyle = i === drag ? "#fff" : "#ffc83d"; ctx.beginPath(); ctx.arc(P[i].x, P[i].y, i === drag ? 18 : 14, 0, 6.2832); ctx.fill(); ctx.strokeStyle = "#2a1060"; ctx.lineWidth = 3; ctx.stroke(); }
+    drawPopups(ctx, popups, dt);
+    setHud(chip("الشكل", Math.min(li + 1, lvls.length) + "/" + lvls.length) + chip("النقاط", score) + chip("الخطوط المتقاطعة", cnt) + chip("الحركات", moves), true);
+  });
+}
+labReg({id:"untangle", name:"فك التشابك", tag:"تفكير", sd:"حرّك النقاط حتى لا يتقاطع أي خط", start:untangleStart,
+  icon:'<path d="M12 12L52 52M52 12L12 52M12 12L52 12" stroke="#ff6b6b" stroke-width="3"/><circle cx="12" cy="12" r="6" fill="#ffc83d"/><circle cx="52" cy="12" r="6" fill="#ffc83d"/><circle cx="12" cy="52" r="6" fill="#ffc83d"/><circle cx="52" cy="52" r="6" fill="#ffc83d"/>',
+  desc:"خطوط متشابكة بين نقاط: اسحب النقاط وأعد ترتيبها حتى لا يتقاطع أي خطين.",
+  instr:["اسحب أي نقطة صفراء بإصبعك إلى مكان جديد، فتتحرك الخطوط المتصلة بها معها.",
+         "الخطوط الحمراء متقاطعة مع غيرها، والخطوط الخضراء سليمة.",
+         "عندما تصبح كل الخطوط خضراء تكون قد فككت الشكل، وننتقل إلى شكل أصعب.",
+         "كل شكل له حل مضمون. كلما أنهيت أسرع زادت نقاطك."],
+  options:[{key:"lv", label:"المستوى", choices:[["سهل",1],["متوسط",2],["صعب",3]]}]});
+
+/* =====================================================================
+   17) عبور الطريق
+   ===================================================================== */
+function crossStart(o){
+  var L = o.lv, SPD = [0, 0.8, 1, 1.25][L];
+  makeCanvas();
+  var ctx = G.ctx, S = 50, COLS = 16, rows = {}, top = -1, pr = 0, pc = 7, px = 7 * S, hop = 0, hopFrom = null, cam = 0, best = 0, coins = 0, dead = false, why = "", deathT = 0, popups = [], pushT = 0, started = false;
+  function genRow(y){
+    var r = {y:y, items:[], trees:{}, coin:-1};
+    if(y < 4){ r.t = "grass"; if(y > 0) for(var k = 0; k < 2; k++) r.trees[pick([0, 1, 2, 13, 14, 15])] = 1; rows[y] = r; return; }
+    var prev = rows[y - 1], roll = Math.random(), run = prev.run || 0;
+    if(prev.t !== "grass" && run >= (prev.t === "road" ? rint(2, 4) : 2)) r.t = "grass";
+    else if(prev.t === "grass" && prev.run < rint(1, 2)) r.t = "grass";
+    else r.t = roll < 0.45 ? "road" : roll < 0.75 ? "river" : roll < 0.85 && y > 15 ? "rail" : "grass";
+    r.run = prev.t === r.t ? run + 1 : 1;
+    r.dir = Math.random() < 0.5 ? -1 : 1;
+    if(r.t === "grass"){ var nT = rint(1, 4); for(k = 0; k < nT; k++){ var tc = rint(0, COLS - 1); if(Math.abs(tc - 7) > 0 || y % 3) r.trees[tc] = 1; } if(Math.random() < 0.3){ r.coin = rint(0, COLS - 1); if(r.trees[r.coin]) r.coin = -1; } }
+    else if(r.t === "road"){ r.sp = rnd(70, 150) * SPD * (1 + Math.min(y, 150) / 220); var x = rnd(0, 200);
+      while(x < COLS * S + 400){ var truck = Math.random() < 0.25, w = truck ? S * 2 : S * 1.2; r.items.push({x:x, w:w, col:pick(["#e74c3c","#3498db","#f1c40f","#9b59b6","#ecf0f1","#2ecc71"]), truck:truck}); x += w + rnd(S * 2.2, S * 5); } r.span = x; }
+    else if(r.t === "river"){ r.sp = rnd(45, 95) * SPD; x = rnd(0, 120);
+      while(x < COLS * S + 400){ w = S * rint(2, 4); r.items.push({x:x, w:w}); x += w + rnd(S * 1.2, S * 2.6); } r.span = x; }
+    else { r.sp = 1400; r.train = {x:-2000, t:rnd(2, 5), warn:0}; }
+    rows[y] = r;
+  }
+  function ensure(){ while(top < pr + 14){ top++; genRow(top); } }
+  ensure();
+  function scrY(y){ return CH - (y - cam) * S - S - 30; }
+  function tryMove(dr, dc){
+    if(dead || hop > 0) return; started = true;
+    var nr = pr + dr, nc = Math.round(px / S) + dc; if(nc < 0 || nc >= COLS || nr < 0) return;
+    if(nr < best - 3) return;
+    var row = rows[nr]; if(row && row.t === "grass" && row.trees[nc]){ beep(160, 50); return; }
+    hopFrom = {r:pr, x:px}; pr = nr; px = nc * S; hop = 0.12; beep(dr > 0 ? 520 : 420, 30);
+  }
+  gListen(document, "keydown", function(e){ var k = e.keyCode; if(k === 38 || k === 87){ tryMove(1, 0); stopKey(e); } else if(k === 40 || k === 83){ tryMove(-1, 0); stopKey(e); } else if(k === 37 || k === 65){ tryMove(0, -1); stopKey(e); } else if(k === 39 || k === 68){ tryMove(0, 1); stopKey(e); } else if(k === 32){ tryMove(1, 0); stopKey(e); } });
+  swipe(G.canvas, function(dx, dy){ if(dy) tryMove(-dy, 0); else tryMove(0, dx); }, function(){ tryMove(1, 0); });
+  makePad({mode:"4", repeat:200, onPress:function(dx, dy){ if(dy) tryMove(-dy, 0); else tryMove(0, dx); }, buttons:[{label:"قفزة ▲", cls:"gold", down:function(){ tryMove(1, 0); }}]});
+  function die(w){ if(dead) return; dead = true; why = w; deathT = 1.6; beep(140, 400, "sawtooth"); }
+  function onLog(row, x){ for(var i = 0; i < row.items.length; i++){ var it = row.items[i], ix = ((it.x % row.span) + row.span) % row.span - 200; if(x + S * 0.5 > ix + 6 && x + S * 0.5 < ix + it.w - 6) return it; } return null; }
+  function itemsX(row, it){ return ((it.x % row.span) + row.span) % row.span - 200; }
+  gLoop(function(dt){
+    var y, i, row;
+    if(!dead){
+      for(y = Math.floor(cam) - 1; y <= top; y++){ row = rows[y]; if(!row) continue;
+        if(row.t === "road" || row.t === "river") for(i = 0; i < row.items.length; i++) row.items[i].x += row.sp * row.dir * dt;
+        if(row.t === "rail"){ var tr = row.train; if(tr.x < -1500 || tr.x > COLS * S + 1500){ tr.t -= dt; if(tr.t < 1.1) tr.warn = 1; if(tr.t <= 0){ tr.x = row.dir > 0 ? -S * 10 : COLS * S; tr.t = rnd(3, 6); tr.warn = 0; } } else { tr.x += row.sp * row.dir * dt; if(tr.x < -1500 || tr.x > COLS * S + 1500) tr.x = -9999; } } }
+      if(hop > 0){ hop -= dt; if(hop <= 0){ hop = 0; if(pr > best){ coins += 0; best = pr; } ensure(); var rr = rows[pr];
+        if(rr.t === "grass" && rr.coin === Math.round(px / S)){ rr.coin = -1; coins++; popups.push({x:px + S / 2, y:scrY(pr), t:0, s:"+5", c:"#ffd700"}); beep(1200, 50); }
+        if(rr.t !== "river") px = Math.round(px / S) * S; } }
+      row = rows[pr];
+      if(hop === 0){
+        if(row.t === "river"){ var lg = onLog(row, px); if(!lg) die("سقطت في النهر! قف على جذوع الأشجار"); else { px += row.sp * row.dir * dt; if(px < -S * 0.3 || px > (COLS - 0.7) * S) die("حملك الجذع بعيداً!"); } }
+        if(row.t === "road") for(i = 0; i < row.items.length; i++){ var ix = itemsX(row, row.items[i]); if(px + S * 0.75 > ix && px + S * 0.25 < ix + row.items[i].w){ die("صدمتك سيارة! انظر يميناً ويساراً قبل العبور"); break; } }
+        if(row.t === "rail"){ var t2 = row.train; if(px + S > t2.x && px < t2.x + S * 10) die("القطار! لا تقف على السكة أبداً"); }
+      }
+      if(started){ pushT += dt; cam += dt * Math.min(1.1, 0.25 + best / 120) * SPD; }
+      var target = pr - 3; if(cam < target) cam += (target - cam) * Math.min(1, dt * 6);
+      if(pr < cam - 0.6) die("تأخرت كثيراً! تقدّم إلى الأمام");
+    }else{ deathT -= dt; if(deathT <= 0 && !G.__crEnd){ G.__crEnd = true; endGame(best * 10 + coins * 5, why + " | تقدمت " + best + " صفاً | العملات: " + coins); return; } }
+    /* الرسم */
+    ctx.fillStyle = "#86d964"; ctx.fillRect(0, 0, CW, CH);
+    for(y = Math.floor(cam) - 1; y <= Math.floor(cam) + 11; y++){ row = rows[y]; if(!row) continue; var sy = scrY(y);
+      if(row.t === "grass"){ ctx.fillStyle = y % 2 ? "#7ccf5a" : "#86d964"; ctx.fillRect(0, sy, CW, S);
+        for(var c in row.trees){ var tx = c * S; ctx.fillStyle = "#6b4423"; ctx.fillRect(tx + 20, sy + 30, 10, 16); ctx.fillStyle = "#2e8b57"; ctx.beginPath(); ctx.arc(tx + 25, sy + 22, 18, 0, 6.2832); ctx.fill(); ctx.fillStyle = "#3cb371"; ctx.beginPath(); ctx.arc(tx + 20, sy + 17, 9, 0, 6.2832); ctx.fill(); }
+        if(row.coin >= 0){ ctx.fillStyle = "#ffd700"; ctx.beginPath(); ctx.arc(row.coin * S + 25, sy + 25, 10 + Math.sin(now() / 200) * 1.5, 0, 6.2832); ctx.fill(); ctx.strokeStyle = "#d99a00"; ctx.lineWidth = 3; ctx.stroke(); } }
+      else if(row.t === "road"){ ctx.fillStyle = "#4a4a55"; ctx.fillRect(0, sy, CW, S); ctx.fillStyle = "rgba(255,255,255,.5)"; for(i = 0; i < 16; i++) ctx.fillRect(i * S + 10, sy - 2, 28, 4);
+        for(i = 0; i < row.items.length; i++){ var it = row.items[i], x = itemsX(row, it); if(x > CW + 100 || x + it.w < -100) continue;
+          ctx.fillStyle = "rgba(0,0,0,.3)"; roundRect(ctx, x + 3, sy + 12, it.w, S - 16, 8); ctx.fill(); ctx.fillStyle = it.col; roundRect(ctx, x, sy + 8, it.w, S - 16, 8); ctx.fill();
+          ctx.fillStyle = "rgba(190,230,255,.85)"; var wx = row.dir > 0 ? x + it.w - 18 : x + 8; ctx.fillRect(wx, sy + 13, 10, S - 26);
+          ctx.fillStyle = "#fff6b0"; ctx.fillRect(row.dir > 0 ? x + it.w - 4 : x, sy + 11, 4, 6); ctx.fillRect(row.dir > 0 ? x + it.w - 4 : x, sy + S - 17, 4, 6); } }
+      else if(row.t === "river"){ ctx.fillStyle = "#3aa0e0"; ctx.fillRect(0, sy, CW, S); ctx.fillStyle = "rgba(255,255,255,.18)"; for(i = 0; i < 6; i++) ctx.fillRect(((i * 160 + now() / 20 * row.dir) % 960 + 960) % 960 - 80, sy + 20, 40, 3);
+        for(i = 0; i < row.items.length; i++){ it = row.items[i]; x = itemsX(row, it); ctx.fillStyle = "#8b5a2b"; roundRect(ctx, x, sy + 8, it.w, S - 16, 14); ctx.fill(); ctx.fillStyle = "#a0703a"; ctx.fillRect(x + 8, sy + 16, it.w - 16, 4); } }
+      else { ctx.fillStyle = "#6b6b6b"; ctx.fillRect(0, sy, CW, S); ctx.fillStyle = "#8b5a2b"; for(i = 0; i < 32; i++) ctx.fillRect(i * 25, sy + 6, 8, S - 12); ctx.fillStyle = "#ccc"; ctx.fillRect(0, sy + 14, CW, 4); ctx.fillRect(0, sy + S - 18, CW, 4);
+        var t3 = row.train; if(t3.warn && Math.floor(now() / 150) % 2){ ctx.fillStyle = "#ff3b30"; ctx.beginPath(); ctx.arc(30, sy + 10, 8, 0, 6.2832); ctx.arc(CW - 30, sy + 10, 8, 0, 6.2832); ctx.fill(); }
+        if(t3.x > -1500 && t3.x < COLS * S + 1500){ ctx.fillStyle = "#c0392b"; roundRect(ctx, t3.x, sy + 4, S * 10, S - 8, 10); ctx.fill(); ctx.fillStyle = "#ffe08a"; for(i = 0; i < 9; i++) ctx.fillRect(t3.x + 20 + i * S, sy + 12, 26, 12); } }
+    }
+    /* اللاعب: فرخ صغير */
+    var hp = hop > 0 ? 1 - hop / 0.12 : 1, dr = hopFrom && hop > 0 ? hopFrom.r + (pr - hopFrom.r) * hp : pr, dxp = hopFrom && hop > 0 ? hopFrom.x + (px - hopFrom.x) * hp : px, jump = hop > 0 ? Math.sin(hp * Math.PI) * 14 : 0;
+    var cx = dxp + S / 2, cy = scrY(dr) + S / 2 - jump;
+    if(!(dead && why.indexOf("النهر") >= 0)){
+      ctx.fillStyle = "rgba(0,0,0,.25)"; ctx.beginPath(); ctx.ellipse ? ctx.ellipse(cx, scrY(dr) + S - 8, 14, 5, 0, 0, 6.2832) : 0; ctx.fill();
+      ctx.fillStyle = dead ? "#ffb3a8" : "#fff"; roundRect(ctx, cx - 15, cy - 15, 30, 30, 8); ctx.fill(); ctx.fillStyle = "#ff3b30"; ctx.fillRect(cx - 4, cy - 21, 8, 7);
+      ctx.fillStyle = "#ff9800"; ctx.beginPath(); ctx.moveTo(cx - 5, cy - 14); ctx.lineTo(cx + 5, cy - 14); ctx.lineTo(cx, cy - 22); ctx.fill();
+      ctx.fillStyle = "#000"; ctx.fillRect(cx - 9, cy - 6, 4, 4); ctx.fillRect(cx + 5, cy - 6, 4, 4);
+    } else { ctx.strokeStyle = "#fff"; ctx.lineWidth = 3; for(i = 1; i < 4; i++){ ctx.beginPath(); ctx.arc(cx, cy + 10, i * 8 * (1.6 - deathT), 0, 6.2832); ctx.stroke(); } }
+    if(!started) bigText(ctx, "المس الشاشة أو اسحب للأمام لتبدأ", CW / 2, 50, 26, "#fff", "#1a1030");
+    if(dead) bigText(ctx, why, CW / 2, CH / 2 - 60, 24, "#ffe08a", "#1a1030");
+    drawPopups(ctx, popups, dt);
+    setHud(chip("الصفوف", best) + chip("العملات", coins) + chip("النقاط", best * 10 + coins * 5), true);
+  });
+  G.finishFn = function(){ if(!G.__crEnd){ G.__crEnd = true; endGame(best * 10 + coins * 5, "تقدمت " + best + " صفاً | العملات: " + coins); } };
+  G.__crEnd = false;
+}
+labReg({id:"cross", name:"عبور الطريق", tag:"مهارة", sd:"اعبر الشوارع والأنهار بأمان", start:crossStart,
+  icon:'<rect x="4" y="4" width="56" height="16" fill="#86d964"/><rect x="4" y="20" width="56" height="16" fill="#4a4a55"/><rect x="4" y="36" width="56" height="12" fill="#3aa0e0"/><rect x="4" y="48" width="56" height="12" fill="#86d964"/><rect x="10" y="23" width="18" height="10" rx="3" fill="#e74c3c"/><rect x="30" y="38" width="22" height="8" rx="4" fill="#8b5a2b"/><rect x="26" y="49" width="12" height="10" rx="3" fill="#fff"/>',
+  desc:"ساعد الفرخ الصغير على التقدم: اعبر الشوارع دون أن تصدمك السيارات، وقف على الجذوع لتعبر الأنهار، واحذر القطار.",
+  instr:["للتقدم: المس اللعبة، أو اسحب للأعلى، أو اضغط «قفزة ▲». للجانبين والخلف: اسحب يميناً أو يساراً أو للأسفل، أو استخدم عصا التحكم.",
+         "في الشارع: انتظر حتى تبتعد السيارات. في النهر: اقفز على الجذوع ولا تقع في الماء. عند السكة: إذا أضاء الضوء الأحمر فالقطار قادم!",
+         "الشاشة تتقدم ببطء، فلا تتأخر كثيراً. اجمع العملات الذهبية (+5)، وكل صف تتقدمه +10.",
+         "تذكير للحياة الحقيقية: اعبر الشارع من ممر المشاة، وانظر يميناً ويساراً، ولا تقف على سكة القطار."],
+  options:[{key:"lv", label:"السرعة", choices:[["بطيئة",1],["عادية",2],["سريعة",3]]}]});
+
+/* =====================================================================
+   18) دمج الفواكه
+   ===================================================================== */
+var FM = [["🍒",15,"#c0392b"],["🍓",20,"#e74c3c"],["🍇",26,"#8e44ad"],["🍊",32,"#e67e22"],["🍋",39,"#f1c40f"],["🍎",46,"#d63031"],["🍐",54,"#a3cb38"],["🍑",62,"#fab1a0"],["🍍",71,"#fdcb6e"],["🍈",80,"#badc58"],["🍉",90,"#27ae60"]];
+function mergeStart(o){
+  makeCanvas();
+  var ctx = G.ctx, WL = 230, WR = 570, FLOOR = 468, LINE = 92, fr = [], next = rint(0, 3), next2 = rint(0, 3), aimX = 400, cool = 0, score = 0, over = false, dangerT = 0, popups = [], best = load("lab_merge", 0), maxLv = 0, id = 0;
+  function drop(){
+    if(over || cool > 0) return; var r = FM[next][1], x = Math.max(WL + r, Math.min(WR - r, aimX));
+    fr.push({x:x, y:LINE - 30, vx:0, vy:0, lv:next, r:r, born:now(), id:id++}); next = next2; next2 = rint(0, 4); cool = 0.45; beep(380, 40);
+  }
+  ptr(G.canvas, function(e){ aimX = canvasPos(e).x; }, function(e){ aimX = canvasPos(e).x; }, function(e){ aimX = canvasPos(e).x; drop(); });
+  gListen(G.canvas, "mousemove", function(e){ if(!e.fromTouch) aimX = canvasPos(e).x; });
+  gListen(document, "keydown", function(e){ var k = e.keyCode; if(k === 37){ aimX -= 25; stopKey(e); } else if(k === 39){ aimX += 25; stopKey(e); } else if(k === 32 || k === 40){ drop(); stopKey(e); } });
+  makePad({mode:"x", onDir:function(dx){ steer = dx; }, buttons:[{label:"أسقِط", cls:"gold", down:drop}]});
+  var steer = 0;
+  function step(dt){
+    var i, j, a, b;
+    for(i = 0; i < fr.length; i++){ a = fr[i]; a.vy += 1300 * dt; a.vx *= 0.995; a.x += a.vx * dt; a.y += a.vy * dt;
+      if(a.x - a.r < WL){ a.x = WL + a.r; a.vx = -a.vx * 0.2; } if(a.x + a.r > WR){ a.x = WR - a.r; a.vx = -a.vx * 0.2; }
+      if(a.y + a.r > FLOOR){ a.y = FLOOR - a.r; a.vy = -a.vy * 0.15; a.vx *= 0.92; } }
+    var merges = [];
+    for(i = 0; i < fr.length; i++) for(j = i + 1; j < fr.length; j++){
+      a = fr[i]; b = fr[j]; var dx = b.x - a.x, dy = b.y - a.y, d = Math.sqrt(dx * dx + dy * dy), m = a.r + b.r;
+      if(d < m && d > 0.01){
+        if(a.lv === b.lv && !a.gone && !b.gone){ a.gone = b.gone = true; merges.push([a, b]); continue; }
+        var nx = dx / d, ny = dy / d, ov = (m - d), ma = b.r * b.r / (a.r * a.r + b.r * b.r);
+        a.x -= nx * ov * ma; a.y -= ny * ov * ma; b.x += nx * ov * (1 - ma); b.y += ny * ov * (1 - ma);
+        var rv = (b.vx - a.vx) * nx + (b.vy - a.vy) * ny;
+        if(rv < 0){ var jimp = -(1.15) * rv; a.vx -= jimp * nx * ma; a.vy -= jimp * ny * ma; b.vx += jimp * nx * (1 - ma); b.vy += jimp * ny * (1 - ma); }
+      }
+    }
+    for(i = 0; i < merges.length; i++){
+      a = merges[i][0]; b = merges[i][1]; var lv = a.lv + 1, mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
+      if(lv < FM.length){ fr.push({x:mx, y:my, vx:0, vy:-60, lv:lv, r:FM[lv][1], born:now() - 2000, id:id++}); maxLv = Math.max(maxLv, lv); }
+      var pts = (lv + 1) * (lv + 2) / 2 * 2; if(lv >= FM.length) pts = 200; score += pts;
+      popups.push({x:mx, y:my - 20, t:0, s:"+" + pts, c:"#fff"}); beep(400 + lv * 70, 90);
+      if(lv === FM.length - 1){ popups.push({x:CW / 2, y:200, t:0, s:"بطيخة! 🍉", c:"#8dffb8"}); }
+    }
+    fr = fr.filter(function(f){ return !f.gone; });
+  }
+  gLoop(function(dt){
+    var i;
+    if(!over){ aimX += steer * 380 * dt; aimX = Math.max(WL, Math.min(WR, aimX)); if(cool > 0) cool -= dt; for(i = 0; i < 4; i++) step(dt / 4);
+      var danger = false; for(i = 0; i < fr.length; i++) if(now() - fr[i].born > 1500 && fr[i].y - fr[i].r < LINE) danger = true;
+      dangerT = danger ? dangerT + dt : 0;
+      if(dangerT > 2.2){ over = true; if(score > best) save("lab_merge", score); beep(160, 500, "sawtooth"); gTimeout(function(){ endGame(score, "أكبر فاكهة: " + FM[maxLv][0]); }, 1400); } }
+    var g = ctx.createLinearGradient(0, 0, 0, CH); g.addColorStop(0, "#ffe9c7"); g.addColorStop(1, "#f6c98b"); ctx.fillStyle = g; ctx.fillRect(0, 0, CW, CH);
+    ctx.fillStyle = "rgba(255,255,255,.55)"; ctx.fillRect(WL, LINE - 40, WR - WL, FLOOR - LINE + 40);
+    ctx.fillStyle = "#b5763a"; ctx.fillRect(WL - 14, LINE - 40, 14, FLOOR - LINE + 54); ctx.fillRect(WR, LINE - 40, 14, FLOOR - LINE + 54); ctx.fillRect(WL - 14, FLOOR, WR - WL + 28, 14);
+    ctx.strokeStyle = dangerT > 0 && Math.floor(now() / 150) % 2 ? "#ff3b30" : "rgba(255,59,48,.5)"; ctx.lineWidth = 3; ctx.setLineDash && ctx.setLineDash([10, 8]); ctx.beginPath(); ctx.moveTo(WL, LINE); ctx.lineTo(WR, LINE); ctx.stroke(); ctx.setLineDash && ctx.setLineDash([]);
+    if(!over){ var r = FM[next][1], ax = Math.max(WL + r, Math.min(WR - r, aimX)); ctx.strokeStyle = "rgba(0,0,0,.15)"; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(ax, LINE - 30); ctx.lineTo(ax, FLOOR); ctx.stroke(); if(cool <= 0) fruit(ax, LINE - 30, next, 1); }
+    for(i = 0; i < fr.length; i++) fruit(fr[i].x, fr[i].y, fr[i].lv, 1);
+    ctx.fillStyle = "#6b4423"; ctx.font = "bold 22px Tahoma"; ctx.textAlign = "center"; ctx.fillText("التالي", 690, 60); fruit(690, 120, next2, 0.8);
+    ctx.fillText("السلسلة", 110, 60); for(i = 0; i < FM.length; i++){ ctx.globalAlpha = i <= maxLv + 1 ? 1 : 0.3; emo(ctx, FM[i][0], 60 + (i % 4) * 34, 100 + Math.floor(i / 4) * 40, 26); } ctx.globalAlpha = 1;
+    drawPopups(ctx, popups, dt);
+    if(over) bigText(ctx, "امتلأ الصندوق!", CW / 2, CH / 2, 46, "#ff3b30", "#fff");
+    setHud(chip("النقاط", score) + chip("الأفضل", Math.max(best, score)), true);
+  });
+  function fruit(x, y, lv, a){ var f = FM[lv], r = f[1] * a; ctx.fillStyle = f[2]; ctx.globalAlpha = 0.35; ctx.beginPath(); ctx.arc(x, y, r, 0, 6.2832); ctx.fill(); ctx.globalAlpha = 1; emo(ctx, f[0], x, y + r * 0.06, Math.round(r * 1.75)); }
+  G.finishFn = function(){ if(!over){ over = true; endGame(score, "أكبر فاكهة: " + FM[maxLv][0]); } };
+}
+labReg({id:"merge", name:"دمج الفواكه", tag:"مهارة", sd:"أسقط الفواكه وادمج المتشابهة", start:mergeStart,
+  icon:'<rect x="8" y="14" width="48" height="44" rx="4" fill="#ffe9c7" stroke="#b5763a" stroke-width="4"/><circle cx="22" cy="44" r="10" fill="#e74c3c"/><circle cx="40" cy="42" r="12" fill="#27ae60"/><circle cx="30" cy="26" r="7" fill="#8e44ad"/>',
+  desc:"أسقط الفواكه في الصندوق: إذا تلامست فاكهتان متشابهتان اندمجتا في فاكهة أكبر. هل تصل إلى البطيخة؟",
+  instr:["حرّك إصبعك فوق الصندوق لتختار مكان الإسقاط، وارفعه لتُسقط الفاكهة (أو استخدم العصا وزر «أسقِط»).",
+         "الكرز + الكرز = فراولة، والفراولة + الفراولة = عنب... حتى البطيخة 🍉. السلسلة كاملة تظهر على اليسار.",
+         "كلما دمجت فاكهة أكبر كسبت نقاطاً أكثر.",
+         "إذا بقيت فاكهة فوق الخط الأحمر أكثر من ثانيتين تنتهي اللعبة."]});
+
+/* =====================================================================
+   19) رجل الحبل (تأرجح من نقطة إلى نقطة)
+   ===================================================================== */
+function ropeStart(o){
+  makeCanvas();
+  var ctx = G.ctx, lvl = 1, score = 0, P, anchors, finishX, rope = null, hold = false, camX = 0, state = "play", t0 = 0, popups = [], tries = 0, totalLv = 8, stars = [];
+  function build(){
+    anchors = []; stars = []; var x = 380, n = 6 + lvl * 2, i;
+    for(i = 0; i < n; i++){ var y = rnd(70, 175 - Math.min(40, lvl * 4)); anchors.push({x:x, y:y}); if(Math.random() < 0.5) stars.push({x:x + rnd(80, 140), y:y + rnd(120, 200), got:false}); x += rnd(230, 300 + lvl * 12); }
+    finishX = anchors[anchors.length - 1].x + 190;
+    P = {x:110, y:312, px:110, py:312}; rope = null; camX = 0; state = "play"; t0 = now();
+  }
+  function grab(){
+    if(state !== "play" || rope) return; var best = null, bd = 1e9;
+    for(var i = 0; i < anchors.length; i++){ var a = anchors[i], dx = a.x - P.x, dy = a.y - P.y, d = Math.sqrt(dx * dx + dy * dy); if(a.x > P.x - 60 && d < 420 && dy < 40 && d < bd){ bd = d; best = a; } }
+    if(best){
+      /* الحبل يشدّ الرجل قليلاً نحو النقطة ويدفعه للأمام فيبدأ التأرجح */
+      /* الحبل ينكمش حتى طول مناسب فيشدّ الرجل ويزيد سرعته، فلا يتدلى إلى الحمم */
+      rope = {a:best, len:Math.max(80, bd), target:Math.min(bd, 215)}; beep(600, 40);
+      var vx = P.x - P.px; if(vx < 2.4) P.px = P.x - 2.4;   /* دفعة للأمام مع كل تمسّك */
+    }
+  }
+  function let_(){ if(rope){ rope = null; beep(420, 30); var vx = P.x - P.px, vy = P.y - P.py; P.px = P.x - vx * 1.08; P.py = P.y - vy * 1.08; } }
+  ptr(G.canvas, function(){ hold = true; grab(); }, null, function(){ hold = false; let_(); });
+  gListen(document, "keydown", function(e){ if(e.keyCode === 32 || e.keyCode === 38){ if(!hold){ hold = true; grab(); } stopKey(e); } });
+  gListen(document, "keyup", function(e){ if(e.keyCode === 32 || e.keyCode === 38){ hold = false; let_(); } });
+  makePad({mode:"x", onDir:function(){}, buttons:[{label:"تمسّك", cls:"gold", down:function(){ hold = true; grab(); }, up:function(){ hold = false; let_(); }}]});
+  var pad = G.pad; if(pad && pad.firstChild) pad.firstChild.style.visibility = "hidden";
+  build();
+  gLoop(function(dt){
+    var i, sub = 3, h = Math.min(dt, 0.033) / sub;
+    if(state === "play") for(var s = 0; s < sub; s++){
+      var vx = (P.x - P.px), vy = (P.y - P.py); P.px = P.x; P.py = P.y;
+      P.x += vx * 0.9996; P.y += vy * 0.9996 + 1500 * h * h;
+      if(rope && rope.len > rope.target) rope.len = Math.max(rope.target, rope.len - 700 * h);
+      if(rope){ var dx = P.x - rope.a.x, dy = P.y - rope.a.y, d = Math.sqrt(dx * dx + dy * dy); if(d > rope.len){ P.x = rope.a.x + dx / d * rope.len; P.y = rope.a.y + dy / d * rope.len; } }
+      if(P.y < 20){ P.y = 20; P.py = P.y; }
+      /* منصتا البداية والنهاية */
+      if(!rope && P.y > 312 && P.py <= 314 && (P.x < 180 || P.x > finishX)){ P.y = 312; var fvx = (P.x - P.px) * 0.8; P.py = P.y; P.px = P.x - fvx; }
+    }
+    if(state === "play"){
+      for(i = 0; i < stars.length; i++) if(!stars[i].got && Math.hypot(stars[i].x - P.x, stars[i].y - P.y) < 30){ stars[i].got = true; score += 20; popups.push({x:stars[i].x - camX, y:stars[i].y, t:0, s:"+20", c:"#ffd700"}); beep(1100, 60); }
+      if(P.y > CH + 40){ state = "fall"; tries++; beep(160, 300, "sawtooth"); gTimeout(function(){ build(); }, 900); }
+      if(P.x > finishX){ state = "won"; var secs = (now() - t0) / 1000, pts = 50 + lvl * 20 + Math.max(0, Math.round(40 - secs * 2)); score += pts; popups.push({x:CW / 2, y:CH / 2, t:0, s:"وصلت! +" + pts, c:"#8dffb8"}); beep(760, 100); setTimeout(function(){ beep(1020, 200); }, 110);
+        gTimeout(function(){ lvl++; if(lvl > totalLv) finish(); else build(); }, 1300); }
+    }
+    camX += (P.x - 260 - camX) * Math.min(1, dt * 5); if(camX < 0) camX = 0;
+    var g = ctx.createLinearGradient(0, 0, 0, CH); g.addColorStop(0, "#5ec4ff"); g.addColorStop(1, "#d8f3ff"); ctx.fillStyle = g; ctx.fillRect(0, 0, CW, CH);
+    ctx.fillStyle = "rgba(255,255,255,.7)"; for(i = 0; i < 6; i++){ var cx = ((i * 260 - camX * 0.3) % 1560 + 1560) % 1560 - 200; ctx.beginPath(); ctx.arc(cx, 70 + (i % 3) * 30, 26, 0, 6.2832); ctx.arc(cx + 30, 64 + (i % 3) * 30, 32, 0, 6.2832); ctx.arc(cx + 62, 72 + (i % 3) * 30, 24, 0, 6.2832); ctx.fill(); }
+    ctx.fillStyle = "#e74c3c"; ctx.fillRect(0, CH - 26, CW, 26); ctx.fillStyle = "#ff9b3d"; for(i = 0; i < 20; i++){ var wx = ((i * 50 - camX) % 1000 + 1000) % 1000 - 50; ctx.beginPath(); ctx.arc(wx, CH - 26, 14, Math.PI, 0); ctx.fill(); }
+    ctx.fillStyle = "#4caf50"; ctx.fillRect(0 - camX, 330, 180, CH); ctx.fillRect(finishX - camX, 330, 400, CH);
+    ctx.fillStyle = "#fff"; ctx.fillRect(finishX - camX + 30, 230, 6, 100); ctx.fillStyle = "#e74c3c"; ctx.beginPath(); ctx.moveTo(finishX - camX + 36, 230); ctx.lineTo(finishX - camX + 86, 248); ctx.lineTo(finishX - camX + 36, 266); ctx.fill();
+    for(i = 0; i < stars.length; i++) if(!stars[i].got){ ctx.fillStyle = "#ffd700"; emo(ctx, "⭐", stars[i].x - camX, stars[i].y, 30); }
+    for(i = 0; i < anchors.length; i++){ var a = anchors[i], near = !rope && state === "play" && Math.hypot(a.x - P.x, a.y - P.y) < 420 && a.x > P.x - 60 && a.y - P.y < 40;
+      ctx.fillStyle = near ? "#ffc83d" : "#555"; ctx.beginPath(); ctx.arc(a.x - camX, a.y, 12, 0, 6.2832); ctx.fill(); ctx.strokeStyle = "#fff"; ctx.lineWidth = 3; ctx.stroke(); }
+    if(rope){ ctx.strokeStyle = "#5d4037"; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(rope.a.x - camX, rope.a.y); ctx.lineTo(P.x - camX, P.y); ctx.stroke(); }
+    var sx = P.x - camX, sy = P.y, ang = Math.atan2(P.y - P.py, P.x - P.px);
+    ctx.save(); ctx.translate(sx, sy); ctx.rotate(rope ? Math.atan2(P.y - rope.a.y, P.x - rope.a.x) - Math.PI / 2 : ang * 0.3);
+    ctx.strokeStyle = "#1a1030"; ctx.lineWidth = 4; ctx.lineCap = "round";
+    ctx.beginPath(); ctx.arc(0, -22, 8, 0, 6.2832); ctx.stroke(); ctx.beginPath(); ctx.moveTo(0, -14); ctx.lineTo(0, 6); ctx.moveTo(0, 6); ctx.lineTo(-8, 20); ctx.moveTo(0, 6); ctx.lineTo(8, 20);
+    ctx.moveTo(0, -8); ctx.lineTo(rope ? 0 : -10, rope ? -28 : 2); ctx.moveTo(0, -8); ctx.lineTo(10, rope ? -20 : 2); ctx.stroke(); ctx.restore();
+    if(state === "fall") bigText(ctx, "سقطت! نعيد المرحلة", CW / 2, CH / 2, 38, "#fff", "#1a1030");
+    if(state === "play" && now() - t0 < 2500) bigText(ctx, "المرحلة " + lvl + ": اضغط مطولاً للتمسك، وارفع إصبعك لتنطلق", CW / 2, 40, 22, "#1a1030", "#fff");
+    drawPopups(ctx, popups, dt);
+    setHud(chip("المرحلة", lvl + "/" + totalLv) + chip("النقاط", score) + chip("السقطات", tries), true);
+  });
+  function finish(){ state = "over"; endGame(score, "أنهيت " + (lvl - 1) + " مراحل | السقطات: " + tries); }
+  G.finishFn = finish;
+}
+labReg({id:"rope", name:"رجل الحبل", tag:"مهارة", sd:"تأرجح بالحبل وطِر إلى خط النهاية", start:ropeStart,
+  icon:'<rect x="4" y="4" width="56" height="56" rx="8" fill="#5ec4ff"/><circle cx="40" cy="14" r="5" fill="#555"/><path d="M40 14L22 40" stroke="#5d4037" stroke-width="3"/><circle cx="20" cy="38" r="4" fill="none" stroke="#1a1030" stroke-width="3"/><path d="M19 42L15 54M19 46L11 50M19 46L25 50M15 54L11 60M15 54L19 60" stroke="#1a1030" stroke-width="3"/>',
+  desc:"اضغط مطولاً ليتمسك الرجل بالحبل بأقرب نقطة، ثم ارفع إصبعك في اللحظة المناسبة لينطلق إلى النقطة التالية حتى خط النهاية.",
+  instr:["اضغط مطولاً على اللعبة (أو زر «تمسّك» أو المسافة) فيتمسك الرجل بأقرب نقطة مضيئة أمامه ويتأرجح.",
+         "ارفع إصبعك عندما يكون متجهاً للأمام والأعلى لينطلق بعيداً، ثم تمسّك بالنقطة التالية.",
+         "اجمع النجوم (+20)، ولا تسقط في الحمم: إذا سقطت تعيد المرحلة.",
+         "8 مراحل تزداد طولاً. كلما أنهيت المرحلة أسرع زادت نقاطك."]});
+
+/* =====================================================================
+   20) احتلال الأرض ضد الحاسوب
+   ===================================================================== */
+function landStart(o){
+  var NB = [0, 2, 3, 5][o.lv], TIME = 150;
+  makeCanvas();
+  var ctx = G.ctx, C = 10, GW = 80, GH = 48, own = new Int8Array(GW * GH), trail = new Int8Array(GW * GH), P = [], t0 = now(), acc = 0, ended = false, popups = [], kills = 0, i;
+  var COLS = [["#ffc83d","rgba(255,200,61,.45)","أنت"],["#e74c3c","rgba(231,76,60,.4)"],["#3498db","rgba(52,152,219,.4)"],["#2ecc71","rgba(46,204,113,.4)"],["#9b59b6","rgba(155,89,182,.4)"],["#ff7ac8","rgba(255,122,200,.4)"]];
+  for(i = 0; i < own.length; i++){ own[i] = -1; trail[i] = -1; }
+  function spawn(id){
+    var tries = 0, x, y;
+    function free(x, y){ for(var a = -4; a <= 4; a++) for(var b = -4; b <= 4; b++){ var X = x + b, Y = y + a; if(X < 0 || Y < 0 || X >= GW || Y >= GH) continue; if(own[Y * GW + X] !== -1 || trail[Y * GW + X] !== -1) return false; } return true; }
+    do{ x = rint(4, GW - 5); y = rint(4, GH - 5); tries++; }while(tries < 200 && !free(x, y));
+    for(var a = -2; a <= 2; a++) for(var b = -2; b <= 2; b++) own[(y + a) * GW + x + b] = id;
+    P[id] = {id:id, x:x, y:y, dx:pick([1, -1]), dy:0, alive:true, out:false, trailCells:[], plan:[], resp:0, steps:0};
+  }
+  for(i = 0; i <= NB; i++) spawn(i);
+  var want = null;
+  function setDir(dx, dy){ var p = P[0]; if(!p.alive) return; if(p.dx === -dx && p.dy === -dy && p.out) return; want = [dx, dy]; }
+  gListen(document, "keydown", function(e){ var k = e.keyCode; if(k === 37 || k === 65){ setDir(-1, 0); stopKey(e); } else if(k === 39 || k === 68){ setDir(1, 0); stopKey(e); } else if(k === 38 || k === 87){ setDir(0, -1); stopKey(e); } else if(k === 40 || k === 83){ setDir(0, 1); stopKey(e); } });
+  swipe(G.canvas, function(dx, dy){ setDir(dx, dy); });
+  makePad({mode:"4", onPress:function(dx, dy){ setDir(dx, dy); }});
+  function killP(id, by){
+    var p = P[id]; if(!p.alive) return; p.alive = false; p.resp = 3; p.by = by;
+    for(var k = 0; k < p.trailCells.length; k++) trail[p.trailCells[k]] = -1; p.trailCells = [];
+    for(k = 0; k < own.length; k++) if(own[k] === id) own[k] = -1;
+    if(by === 0 && id !== 0){ kills++; popups.push({x:p.x * C, y:p.y * C, t:0, s:"أسقطته! +50", c:"#ffc83d"}); beep(300, 200, "square"); }
+    if(id === 0){ beep(140, 500, "sawtooth"); }
+  }
+  function capture(id){
+    var p = P[id], k, q = [], seen = new Uint8Array(GW * GH);
+    for(k = 0; k < p.trailCells.length; k++){ own[p.trailCells[k]] = id; trail[p.trailCells[k]] = -1; }
+    p.trailCells = [];
+    for(var x = 0; x < GW; x++){ q.push(x); q.push((GH - 1) * GW + x); } for(var y = 0; y < GH; y++){ q.push(y * GW); q.push(y * GW + GW - 1); }
+    while(q.length){ var c = q.pop(); if(seen[c] || own[c] === id) continue; seen[c] = 1; var cx = c % GW, cy = (c / GW) | 0;
+      if(cx > 0) q.push(c - 1); if(cx < GW - 1) q.push(c + 1); if(cy > 0) q.push(c - GW); if(cy < GH - 1) q.push(c + GW); }
+    var gained = 0;
+    for(k = 0; k < own.length; k++) if(!seen[k] && own[k] !== id){ var prev = own[k]; own[k] = id; gained++; if(trail[k] >= 0 && trail[k] !== id) killP(trail[k], id); }
+    if(id === 0 && gained){ beep(700, 80); }
+    /* لاعب فقد كل أرضه يخرج */
+    for(k = 0; k < P.length; k++) if(P[k].alive && k !== id){ var has = false; for(var m = 0; m < own.length && !has; m++) if(own[m] === k) has = true; if(!has) killP(k, id); }
+  }
+  function botThink(p){
+    if(p.plan.length) return;
+    var inOwn = own[p.y * GW + p.x] === p.id;
+    if(inOwn){ var L1 = rint(4, 12), L2 = rint(3, 9), d = pick([[1,0],[-1,0],[0,1],[0,-1]]), turn = Math.random() < 0.5 ? 1 : -1, d2 = [d[1] * turn, d[0] * turn];
+      var k; for(k = 0; k < rint(0, 6); k++) p.plan.push(d); for(k = 0; k < L1; k++) p.plan.push(d); for(k = 0; k < L2; k++) p.plan.push(d2); for(k = 0; k < L1 + 6; k++) p.plan.push([-d[0], -d[1]]); }
+    else p.plan.push(homeDir(p));
+  }
+  function homeDir(p){
+    var best = null, bd = 1e9, dirs = [[1,0],[-1,0],[0,1],[0,-1]];
+    for(var k = 0; k < dirs.length; k++){ var nx = p.x + dirs[k][0], ny = p.y + dirs[k][1]; if(nx < 0 || ny < 0 || nx >= GW || ny >= GH || trail[ny * GW + nx] === p.id) continue;
+      for(var r = 1; r < 40; r++){ var hit = false; for(var a = -r; a <= r && !hit; a++) for(var b = -r; b <= r && !hit; b++){ var X = nx + a, Y = ny + b; if(X >= 0 && Y >= 0 && X < GW && Y < GH && own[Y * GW + X] === p.id && Math.abs(a) + Math.abs(b) <= r) hit = true; } if(hit){ if(r < bd){ bd = r; best = dirs[k]; } break; } } }
+    return best || [p.dx, p.dy];
+  }
+  function stepP(p){
+    if(!p.alive){ p.resp -= 0.1; if(p.resp <= 0 && p.id !== 0) spawn(p.id); return; }
+    if(p.id === 0){ if(want){ if(!(p.out && want[0] === -p.dx && want[1] === -p.dy)){ p.dx = want[0]; p.dy = want[1]; } want = null; } }
+    else { botThink(p); var d = p.plan.shift(); if(d){ if(p.out && d[0] === -p.dx && d[1] === -p.dy) d = [p.dy, p.dx]; p.dx = d[0]; p.dy = d[1]; } }
+    if(!p.dx && !p.dy) return;
+    var nx = p.x + p.dx, ny = p.y + p.dy;
+    if(nx < 0 || ny < 0 || nx >= GW || ny >= GH){ if(p.id === 0){ p.dx = 0; p.dy = 0; return; } p.plan = []; p.dx = -p.dx; p.dy = -p.dy; return; }
+    var c = ny * GW + nx;
+    if(trail[c] === p.id){ killP(p.id, p.id); return; }
+    if(trail[c] >= 0){ killP(trail[c], p.id); }
+    p.x = nx; p.y = ny;
+    if(own[c] === p.id){ if(p.out){ p.out = false; capture(p.id); } }
+    else { p.out = true; trail[c] = p.id; p.trailCells.push(c); }
+  }
+  function pct(id){ var n = 0; for(var k = 0; k < own.length; k++) if(own[k] === id) n++; return n / own.length * 100; }
+  function finish(why){ if(ended) return; ended = true; var pc = pct(0); endGame(Math.round(pc * 10) + kills * 50, why + " | مساحتك: " + pc.toFixed(1) + "% | أسقطت " + kills + " منافسين"); }
+  G.finishFn = function(){ finish("أنهيت اللعبة"); };
+  gLoop(function(dt){
+    if(ended) return;
+    var left = TIME - (now() - t0) / 1000;
+    acc += dt; while(acc >= 0.1){ acc -= 0.1; for(var k = 0; k < P.length; k++) stepP(P[k]); if(!P[0].alive){ var why0 = P[0].by === 0 ? "لمست خطك أنت!" : "قطع أحد المنافسين خطك!"; gTimeout(function(){ finish(why0); }, 900); acc = -99; break; } }
+    if(left <= 0) finish("انتهى الوقت");
+    ctx.fillStyle = "#1b1b2e"; ctx.fillRect(0, 0, CW, CH);
+    for(k = 0; k < own.length; k++){ var x = (k % GW) * C, y = ((k / GW) | 0) * C;
+      if(own[k] >= 0){ ctx.fillStyle = COLS[own[k]][0]; ctx.globalAlpha = 0.55; ctx.fillRect(x, y, C, C); ctx.globalAlpha = 1; }
+      if(trail[k] >= 0){ ctx.fillStyle = COLS[trail[k]][1]; ctx.fillRect(x + 1, y + 1, C - 2, C - 2); } }
+    for(k = 0; k < P.length; k++){ var p = P[k]; if(!p.alive) continue; ctx.fillStyle = COLS[k][0]; ctx.fillRect(p.x * C - 3, p.y * C - 3, C + 6, C + 6); ctx.strokeStyle = k === 0 ? "#fff" : "#1b1b2e"; ctx.lineWidth = 2; ctx.strokeRect(p.x * C - 3, p.y * C - 3, C + 6, C + 6); }
+    drawPopups(ctx, popups, dt);
+    setHud(chip("الوقت", fmt(Math.max(0, left))) + chip("مساحتك", pct(0).toFixed(1) + "%") + chip("أسقطت", kills), true);
+  });
+}
+labReg({id:"land", name:"احتلال الأرض", tag:"مهارة", sd:"وسّع أرضك وتجنب أن يُقطع خطك", start:landStart,
+  icon:'<rect x="4" y="4" width="56" height="56" rx="6" fill="#1b1b2e"/><rect x="8" y="8" width="24" height="20" fill="#ffc83d" opacity=".7"/><rect x="34" y="34" width="22" height="22" fill="#e74c3c" opacity=".7"/><path d="M32 18H46V30H32" stroke="#ffc83d" stroke-width="4" fill="none" opacity=".6"/><rect x="30" y="26" width="8" height="8" fill="#ffc83d" stroke="#fff"/>',
+  desc:"اخرج من أرضك وارسم خطاً ثم عُد إليها، فتصبح المساحة التي أحطت بها ملكك. احذر: إذا لمس أحد خطك قبل أن تعود تخسر!",
+  instr:["وجّه مربعك الأصفر بعصا التحكم أو بالسحب على اللعبة أو بالأسهم. إنه يتحرك دائماً.",
+         "عندما تخرج من أرضك تترك خطاً خلفك، وعندما تعود تصبح كل المساحة المحاطة بخطك ملكك.",
+         "إذا مررت على خط منافس قبل أن يعود إلى أرضه يسقط (+50). وإذا لمس أحدٌ خطك أو لمست خطك أنت تنتهي اللعبة.",
+         "مدة اللعبة دقيقتان ونصف. نقاطك = نسبة مساحتك × 10 + المنافسون الذين أسقطتهم."],
+  options:[{key:"lv", label:"عدد المنافسين", choices:[["2 منافسَين",1],["3 منافسين",2],["5 منافسين",3]]}]});
+
+/* =====================================================================
+   21) الدودة الكبيرة ضد الحاسوب
+   ===================================================================== */
+function wormStart(o){
+  var NB = [0, 6, 9, 12][o.lv], R = 1500;
+  makeCanvas();
+  var ctx = G.ctx, worms = [], food = [], cam = {x:0, y:0}, ended = false, popups = [], steer = null, boostHeld = false, kills = 0, best = 0, t0 = now();
+  var SKINS = [["#ffc83d","#ff9b3d"],["#e74c3c","#ff8a80"],["#3498db","#90caf9"],["#2ecc71","#a5d6a7"],["#9b59b6","#ce93d8"],["#1abc9c","#80cbc4"],["#ff7ac8","#f8bbd0"],["#e67e22","#ffcc80"],["#95a5a6","#eceff1"],["#00bcd4","#b2ebf2"],["#cddc39","#f0f4c3"],["#8d6e63","#d7ccc8"],["#f06292","#fce4ec"]];
+  function addFood(x, y, v, c){ food.push({x:x, y:y, v:v || 1, c:c || pick(["#ff6b6b","#ffd93d","#6bcb77","#4d96ff","#c77dff","#ff9f1c"]), r:v > 1 ? 7 : 4.5}); }
+  function rndPt(){ var a = rnd(0, 6.2832), d = Math.sqrt(Math.random()) * (R - 60); return {x:Math.cos(a) * d, y:Math.sin(a) * d}; }
+  for(var i = 0; i < 500; i++){ var p = rndPt(); addFood(p.x, p.y); }
+  function makeWorm(id, len){
+    var p = id === 0 ? {x:0, y:0} : rndPt(), a = rnd(0, 6.2832), w = {id:id, ang:a, want:a, segs:[], len:len, alive:true, skin:SKINS[id % SKINS.length], boost:false, ai:{t:0, tx:0, ty:0}};
+    for(var k = 0; k < len; k++) w.segs.push({x:p.x - Math.cos(a) * k * 8, y:p.y - Math.sin(a) * k * 8});
+    return w;
+  }
+  worms.push(makeWorm(0, 12)); for(i = 1; i <= NB; i++) worms.push(makeWorm(i, rint(10, 40)));
+  function rad(w){ return Math.min(22, 8 + w.len * 0.06); }
+  /* التوجيه: العصا (تناظري) أو لمس/سحب الإصبع على اللعبة باتجاه من المنتصف */
+  makePad({mode:"4", onVec:function(x, y, m){ steer = m > 0 ? Math.atan2(y, x) : null; }, buttons:[{label:"تسريع", cls:"red", down:function(){ boostHeld = true; }, up:function(){ boostHeld = false; }}]});
+  var touchSteer = false;
+  ptr(G.canvas, function(e){ touchSteer = true; var p = canvasPos(e); worms[0].want = Math.atan2(p.y - CH / 2, p.x - CW / 2); }, function(e){ if(!touchSteer) return; var p = canvasPos(e); worms[0].want = Math.atan2(p.y - CH / 2, p.x - CW / 2); }, function(){ touchSteer = false; });
+  var keys = {};
+  gListen(document, "keydown", function(e){ keys[e.keyCode] = 1; if(e.keyCode >= 37 && e.keyCode <= 40 || e.keyCode === 32) stopKey(e); });
+  gListen(document, "keyup", function(e){ keys[e.keyCode] = 0; });
+  function die(w, killer){
+    if(!w.alive) return; w.alive = false;
+    for(var k = 0; k < w.segs.length; k += 2) addFood(w.segs[k].x + rnd(-6, 6), w.segs[k].y + rnd(-6, 6), 3, w.skin[0]);
+    if(killer && killer.id === 0){ kills++; popups.push({x:CW / 2, y:CH / 2 - 60, t:0, s:"أسقطت دودة! 💥", c:"#ffc83d"}); beep(300, 180, "square"); }
+    if(w.id === 0){ beep(140, 500, "sawtooth"); gTimeout(function(){ finish(killer ? "اصطدمت بدودة أخرى" : "خرجت من الساحة"); }, 1200); }
+    else gTimeout(function(){ var nw = makeWorm(w.id, rint(10, 30)); worms[worms.indexOf(w)] = nw; }, 3000);
+  }
+  function think(w, dt){
+    var ai = w.ai, h = w.segs[0]; ai.t -= dt;
+    if(ai.t <= 0){ ai.t = rnd(0.4, 1.2); var bf = null, bd = 1e9;
+      for(var k = 0; k < food.length; k += 3){ var f = food[k], d = (f.x - h.x) * (f.x - h.x) + (f.y - h.y) * (f.y - h.y); if(d < bd && d < 400 * 400){ bd = d; bf = f; } }
+      if(bf){ ai.tx = bf.x; ai.ty = bf.y; } else { var p = rndPt(); ai.tx = p.x; ai.ty = p.y; } }
+    w.want = Math.atan2(ai.ty - h.y, ai.tx - h.x);
+    /* تجنب: انظر أمامك */
+    var look = 70 + rad(w) * 3, lx = h.x + Math.cos(w.ang) * look, ly = h.y + Math.sin(w.ang) * look;
+    if(lx * lx + ly * ly > (R - 80) * (R - 80)) w.want = Math.atan2(-h.y, -h.x);
+    for(var j = 0; j < worms.length; j++){ var o2 = worms[j]; if(!o2.alive || o2 === w) continue;
+      for(k = 0; k < o2.segs.length; k += 3){ var s = o2.segs[k], dx = s.x - lx, dy = s.y - ly; if(dx * dx + dy * dy < 60 * 60){ w.want = w.ang + (Math.random() < 0.5 ? 1.6 : -1.6); ai.t = 0.4; j = 99; break; } } }
+    w.boost = w.len > 20 && Math.random() < 0.004 ? true : w.boost && Math.random() < 0.97;
+  }
+  function update(dt){
+    var me = worms[0];
+    if(me.alive){
+      if(steer !== null) me.want = steer;
+      var kx = (keys[39] || keys[68] ? 1 : 0) - (keys[37] || keys[65] ? 1 : 0), ky = (keys[40] || keys[83] ? 1 : 0) - (keys[38] || keys[87] ? 1 : 0);
+      if(kx || ky) me.want = Math.atan2(ky, kx);
+      me.boost = boostHeld || !!keys[32];
+    }
+    for(var i = 0; i < worms.length; i++){
+      var w = worms[i]; if(!w.alive) continue;
+      if(i) think(w, dt);
+      var da = w.want - w.ang; while(da > Math.PI) da -= 6.2832; while(da < -Math.PI) da += 6.2832;
+      var turn = 4.2 * dt; w.ang += Math.max(-turn, Math.min(turn, da));
+      var boosting = w.boost && w.len > 12, sp = (boosting ? 330 : 170) * dt, h = w.segs[0];
+      var nh = {x:h.x + Math.cos(w.ang) * sp, y:h.y + Math.sin(w.ang) * sp};
+      w.segs.unshift(nh);
+      /* الأجزاء تتبع الرأس على مسافات ثابتة */
+      var gap = 7, out = [nh], acc = 0, prev = nh;
+      for(var k = 1; k < w.segs.length && out.length < w.len; k++){ var s = w.segs[k], dx = s.x - prev.x, dy = s.y - prev.y, d = Math.sqrt(dx * dx + dy * dy);
+        while(acc + d >= gap && out.length < w.len){ var t = (gap - acc) / d; prev = {x:prev.x + dx * t, y:prev.y + dy * t}; out.push(prev); dx = s.x - prev.x; dy = s.y - prev.y; d = Math.sqrt(dx * dx + dy * dy); acc = 0; }
+        acc += d; prev = s; }
+      while(out.length < w.len) out.push({x:out[out.length - 1].x, y:out[out.length - 1].y});
+      w.segs = out;
+      if(boosting){ w.bt = (w.bt || 0) + dt; if(w.bt > 0.25){ w.bt = 0; w.len--; var tl = w.segs[w.segs.length - 1]; addFood(tl.x, tl.y, 1, w.skin[0]); } }
+      if(nh.x * nh.x + nh.y * nh.y > R * R){ die(w, null); continue; }
+      var hr = rad(w);
+      for(k = food.length - 1; k >= 0; k--){ var f = food[k], fx = f.x - nh.x, fy = f.y - nh.y; if(fx * fx + fy * fy < (hr + f.r + 4) * (hr + f.r + 4)){ w.len += f.v; food.splice(k, 1); if(i === 0) beep(900 + Math.random() * 300, 12); } }
+    }
+    for(i = 0; i < worms.length; i++){ w = worms[i]; if(!w.alive) continue; var hh = w.segs[0], r1 = rad(w);
+      for(var j = 0; j < worms.length; j++){ var o2 = worms[j]; if(j === i || !o2.alive) continue; var r2 = rad(o2);
+        for(k = 1; k < o2.segs.length; k++){ var q = o2.segs[k], ex = q.x - hh.x, ey = q.y - hh.y; if(ex * ex + ey * ey < (r1 * 0.7 + r2) * (r1 * 0.7 + r2)){ die(w, o2); j = 99; break; } } } }
+    while(food.length < 450){ var p = rndPt(); addFood(p.x, p.y); }
+    if(me.alive) best = Math.max(best, me.len);
+  }
+  function finish(why){ if(ended) return; ended = true; endGame(best * 2 + kills * 40, why + " | أكبر طول: " + best + " | أسقطت " + kills + " ديدان"); }
+  G.finishFn = function(){ finish("أنهيت اللعبة"); };
+  gLoop(function(dt){
+    if(ended) return;
+    update(dt);
+    var me = worms[0], i, k;
+    if(me.alive){ cam.x += (me.segs[0].x - cam.x) * Math.min(1, dt * 8); cam.y += (me.segs[0].y - cam.y) * Math.min(1, dt * 8); }
+    var zoom = Math.max(0.55, 1 - me.len / 600), ox = CW / 2 - cam.x * zoom, oy = CH / 2 - cam.y * zoom;
+    ctx.fillStyle = "#0b0f1e"; ctx.fillRect(0, 0, CW, CH);
+    ctx.save(); ctx.translate(ox, oy); ctx.scale(zoom, zoom);
+    ctx.fillStyle = "#141a33"; ctx.beginPath(); ctx.arc(0, 0, R, 0, 6.2832); ctx.fill();
+    ctx.strokeStyle = "rgba(255,255,255,.05)"; ctx.lineWidth = 2; var gx0 = Math.floor((cam.x - CW / zoom) / 60) * 60, gy0 = Math.floor((cam.y - CH / zoom) / 60) * 60;
+    for(var gx = gx0; gx < cam.x + CW / zoom; gx += 60){ ctx.beginPath(); ctx.moveTo(gx, cam.y - CH / zoom); ctx.lineTo(gx, cam.y + CH / zoom); ctx.stroke(); }
+    for(var gy = gy0; gy < cam.y + CH / zoom; gy += 60){ ctx.beginPath(); ctx.moveTo(cam.x - CW / zoom, gy); ctx.lineTo(cam.x + CW / zoom, gy); ctx.stroke(); }
+    ctx.strokeStyle = "#ff3b30"; ctx.lineWidth = 8; ctx.beginPath(); ctx.arc(0, 0, R, 0, 6.2832); ctx.stroke();
+    var vx0 = cam.x - CW / 2 / zoom - 20, vx1 = cam.x + CW / 2 / zoom + 20, vy0 = cam.y - CH / 2 / zoom - 20, vy1 = cam.y + CH / 2 / zoom + 20;
+    for(i = 0; i < food.length; i++){ var f = food[i]; if(f.x < vx0 || f.x > vx1 || f.y < vy0 || f.y > vy1) continue; ctx.fillStyle = f.c; ctx.beginPath(); ctx.arc(f.x, f.y, f.r, 0, 6.2832); ctx.fill(); }
+    for(i = worms.length - 1; i >= 0; i--){ var w = worms[i]; if(!w.alive) continue; var r = rad(w);
+      for(k = w.segs.length - 1; k >= 0; k--){ var s = w.segs[k]; if(s.x < vx0 - 30 || s.x > vx1 + 30 || s.y < vy0 - 30 || s.y > vy1 + 30) continue; ctx.fillStyle = (k >> 2) % 2 ? w.skin[0] : w.skin[1]; ctx.beginPath(); ctx.arc(s.x, s.y, r, 0, 6.2832); ctx.fill(); }
+      var h = w.segs[0], ex = Math.cos(w.ang), ey = Math.sin(w.ang);
+      for(var e2 = -1; e2 <= 1; e2 += 2){ var px = h.x + ex * r * 0.3 - ey * r * 0.45 * e2, py = h.y + ey * r * 0.3 + ex * r * 0.45 * e2; ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.arc(px, py, r * 0.33, 0, 6.2832); ctx.fill(); ctx.fillStyle = "#000"; ctx.beginPath(); ctx.arc(px + ex * r * 0.12, py + ey * r * 0.12, r * 0.17, 0, 6.2832); ctx.fill(); }
+      if(i === 0){ ctx.fillStyle = "#fff"; ctx.font = "bold 16px Tahoma"; ctx.textAlign = "center"; ctx.fillText("أنت", h.x, h.y - r - 10); } }
+    ctx.restore();
+    /* خريطة صغيرة */
+    ctx.fillStyle = "rgba(0,0,0,.45)"; ctx.beginPath(); ctx.arc(CW - 60, CH - 60, 48, 0, 6.2832); ctx.fill();
+    for(i = 0; i < worms.length; i++) if(worms[i].alive){ ctx.fillStyle = i ? "rgba(255,255,255,.5)" : "#ffc83d"; ctx.beginPath(); ctx.arc(CW - 60 + worms[i].segs[0].x / R * 46, CH - 60 + worms[i].segs[0].y / R * 46, i ? 2.5 : 4, 0, 6.2832); ctx.fill(); }
+    /* ترتيب */
+    var rank = worms.filter(function(w){ return w.alive; }).sort(function(a, b){ return b.len - a.len; }), pos = rank.indexOf(me) + 1;
+    drawPopups(ctx, popups, dt);
+    setHud(chip("الطول", me.len) + chip("الترتيب", me.alive ? pos + "/" + rank.length : "-") + chip("أسقطت", kills), true);
+  });
+}
+labReg({id:"worm", name:"الدودة الكبيرة", tag:"مهارة", sd:"كُل وكبّر وتجنب الاصطدام بالديدان", start:wormStart,
+  icon:'<rect x="4" y="4" width="56" height="56" rx="10" fill="#141a33"/><circle cx="14" cy="44" r="7" fill="#ff9b3d"/><circle cx="22" cy="38" r="7" fill="#ffc83d"/><circle cx="31" cy="34" r="7" fill="#ff9b3d"/><circle cx="40" cy="30" r="7" fill="#ffc83d"/><circle cx="48" cy="22" r="8" fill="#ff9b3d"/><circle cx="50" cy="20" r="2.5" fill="#000"/><circle cx="20" cy="16" r="3" fill="#6bcb77"/><circle cx="34" cy="50" r="3" fill="#4d96ff"/>',
+  desc:"تحكّم بدودتك في ساحة كبيرة مليئة بالطعام والديدان المنافسة: كُل لتكبر، واجعل الديدان الأخرى تصطدم بجسمك.",
+  instr:["وجّه الدودة بعصا التحكم (تتجه حيث تدفع الدائرة)، أو المس اللعبة واسحب إصبعك فتتجه نحو مكان إصبعك.",
+         "كُل النقاط الملونة لتطول. اضغط مطولاً على «تسريع» لتنطلق بسرعة، لكنك تفقد شيئاً من طولك.",
+         "إذا اصطدم رأسك بجسم دودة أخرى تخسر، وإذا اصطدم رأسها بجسمك تسقط وتتحول إلى طعام (+40).",
+         "لا تخرج من الدائرة الحمراء. نقاطك = أكبر طول × 2 + الديدان التي أسقطتها."],
+  options:[{key:"lv", label:"عدد المنافسين", choices:[["6 ديدان",1],["9 ديدان",2],["12 دودة",3]]}]});
+
+/* =====================================================================
+   22) الانجراف (طريق متعرج، المس لتغيير الاتجاه)
+   ===================================================================== */
+function driftStart(o){
+  var W0 = [0, 92, 76, 64][o.lv];
+  makeCanvas();
+  var ctx = G.ctx, pts = [], gems = [], car = {x:400, y:0, dir:1, ang:-Math.PI / 4, vis:-Math.PI / 4}, speed = 210, camY = 0, dist = 0, score = 0, gemsN = 0, state = "ready", fallT = 0, skids = [], popups = [], turns = 0, perfect = 0, combo = 0;
+  var D = 0.7071;
+  function gen(){
+    var last = pts[pts.length - 1], dir = last.d * -1, len = rnd(60, 230 - Math.min(80, pts.length * 2)), nx = last.x + dir * len * D, ny = last.y - len * D;
+    if(nx < 120 || nx > CW - 120){ dir = -dir; nx = last.x + dir * len * D; }
+    pts.push({x:nx, y:ny, d:dir});
+    if(Math.random() < 0.45){ var t = rnd(0.3, 0.7); gems.push({x:last.x + (nx - last.x) * t, y:last.y + (ny - last.y) * t, got:false}); }
+  }
+  pts.push({x:400, y:300, d:-1}); for(var i = 0; i < 30; i++) gen();
+  car.x = 400; car.y = 300; car.dir = pts[1].x > pts[0].x ? 1 : -1; car.vis = car.ang = car.dir > 0 ? -Math.PI / 4 : -3 * Math.PI / 4; camY = car.y - CH * 0.72;
+  function turn(){
+    if(state === "ready"){ state = "run"; return; }
+    if(state !== "run") return; car.dir = -car.dir; turns++; beep(500, 25);
+    /* انعطاف قريب من الزاوية = انعطاف ممتاز */
+    var best = 1e9; for(var k = 1; k < pts.length; k++){ var d = Math.hypot(pts[k].x - car.x, pts[k].y - car.y); if(d < best) best = d; }
+    if(best < 22){ combo++; perfect++; var pp = 2 * Math.min(combo, 5); score += pp; popups.push({x:car.x, y:car.y - camY - 30, t:0, s:"ممتاز! +" + pp, c:"#ffc83d"}); } else combo = 0;
+  }
+  ptr(G.canvas, function(){ turn(); });
+  gListen(document, "keydown", function(e){ if(e.keyCode === 32 || e.keyCode === 37 || e.keyCode === 39 || e.keyCode === 38){ turn(); stopKey(e); } });
+  makePad({mode:"x", onDir:function(){}, buttons:[{label:"انعطف", cls:"gold", down:turn}]});
+  if(G.pad && G.pad.firstChild) G.pad.firstChild.style.visibility = "hidden";
+  function onRoad(x, y){
+    var W = W0 / 2;
+    for(var k = 0; k + 1 < pts.length; k++){ var a = pts[k], b = pts[k + 1]; if(y > a.y + 60 || y < b.y - 60) continue;
+      var dx = b.x - a.x, dy = b.y - a.y, t = ((x - a.x) * dx + (y - a.y) * dy) / (dx * dx + dy * dy); t = Math.max(0, Math.min(1, t));
+      var qx = a.x + t * dx - x, qy = a.y + t * dy - y; if(qx * qx + qy * qy <= W * W) return true; }
+    return false;
+  }
+  gLoop(function(dt){
+    var k;
+    if(state === "run"){
+      speed = 210 + Math.min(260, dist / 18);
+      var target = car.dir > 0 ? -Math.PI / 4 : -3 * Math.PI / 4; car.ang = target;
+      var dv = car.ang - car.vis; car.vis += dv * Math.min(1, dt * 10);
+      car.x += Math.cos(car.vis) * speed * dt; car.y += Math.sin(car.vis) * speed * dt; dist += speed * dt / 10;
+      if(Math.abs(dv) > 0.15) skids.push({x:car.x, y:car.y, t:1});
+      for(k = 0; k < gems.length; k++){ var g = gems[k]; if(!g.got && Math.hypot(g.x - car.x, g.y - car.y) < 24){ g.got = true; gemsN++; score += 5; popups.push({x:g.x, y:g.y - camY - 20, t:0, s:"+5", c:"#4dd0e1"}); beep(1200, 50); } }
+      if(!onRoad(car.x, car.y)){ state = "fall"; fallT = 1; beep(160, 500, "sawtooth"); }
+      while(pts[pts.length - 1].y > car.y - 900) gen();
+      while(pts.length > 6 && pts[2].y > car.y + 500){ pts.shift(); }
+    }else if(state === "fall"){ fallT -= dt * 0.9; if(fallT <= 0){ state = "over"; var sc = Math.floor(dist) + score; endGame(sc, "المسافة: " + Math.floor(dist) + " م | الجواهر: " + gemsN + " | انعطافات ممتازة: " + perfect); return; } }
+    camY += (car.y - CH * 0.72 - camY) * Math.min(1, dt * 6);
+    ctx.fillStyle = "#3fb5a3"; ctx.fillRect(0, 0, CW, CH);
+    ctx.fillStyle = "rgba(255,255,255,.07)"; for(k = 0; k < 12; k++){ var yy = ((k * 90 - camY * 0.5) % 1080 + 1080) % 1080 - 100; ctx.beginPath(); ctx.arc((k * 173) % CW, yy, 30, 0, 6.2832); ctx.fill(); }
+    ctx.lineCap = "round"; ctx.lineJoin = "round";
+    ctx.strokeStyle = "#2c7a6e"; ctx.lineWidth = W0 + 18; ctx.beginPath(); for(k = 0; k < pts.length; k++){ var p = pts[k]; if(k) ctx.lineTo(p.x, p.y - camY + 10); else ctx.moveTo(p.x, p.y - camY + 10); } ctx.stroke();
+    ctx.strokeStyle = "#f6e3c3"; ctx.lineWidth = W0; ctx.beginPath(); for(k = 0; k < pts.length; k++){ p = pts[k]; if(k) ctx.lineTo(p.x, p.y - camY); else ctx.moveTo(p.x, p.y - camY); } ctx.stroke();
+    ctx.strokeStyle = "rgba(0,0,0,.18)"; ctx.lineWidth = 4;
+    for(k = skids.length - 1; k >= 0; k--){ var s = skids[k]; s.t -= dt * 0.5; if(s.t <= 0){ skids.splice(k, 1); continue; } ctx.globalAlpha = s.t; ctx.fillStyle = "#555"; ctx.fillRect(s.x - 3, s.y - camY - 3, 6, 6); } ctx.globalAlpha = 1;
+    for(k = 0; k < gems.length; k++){ var g2 = gems[k]; if(g2.got) continue; ctx.fillStyle = "#4dd0e1"; ctx.beginPath(); var gy = g2.y - camY + Math.sin(now() / 200 + k) * 3; ctx.moveTo(g2.x, gy - 11); ctx.lineTo(g2.x + 9, gy); ctx.lineTo(g2.x, gy + 11); ctx.lineTo(g2.x - 9, gy); ctx.fill(); }
+    var sc2 = state === "fall" ? Math.max(0.1, fallT) : 1;
+    ctx.save(); ctx.translate(car.x, car.y - camY); ctx.rotate(car.vis + Math.PI / 2); ctx.scale(sc2, sc2);
+    ctx.fillStyle = "rgba(0,0,0,.25)"; roundRect(ctx, -13, -21, 30, 46, 8); ctx.fill();
+    ctx.fillStyle = "#e53935"; roundRect(ctx, -15, -24, 30, 46, 8); ctx.fill(); ctx.fillStyle = "#bfe6ff"; ctx.fillRect(-11, -14, 22, 10); ctx.fillStyle = "#b71c1c"; ctx.fillRect(-11, 6, 22, 10); ctx.fillStyle = "#fff6b0"; ctx.fillRect(-12, -24, 6, 4); ctx.fillRect(6, -24, 6, 4);
+    ctx.restore();
+    if(state === "ready") bigText(ctx, "المس الشاشة لتبدأ، ثم المس لتغيّر الاتجاه عند كل منعطف", CW / 2, 50, 24, "#fff", "#1a1030");
+    drawPopups(ctx, popups, dt);
+    setHud(chip("المسافة", Math.floor(dist) + " م") + chip("الجواهر", gemsN) + chip("النقاط", Math.floor(dist) + score) + chip("ممتاز", perfect), true);
+  });
+  G.finishFn = function(){ if(state !== "over"){ state = "over"; endGame(Math.floor(dist) + score, "المسافة: " + Math.floor(dist) + " م"); } };
+}
+labReg({id:"drift", name:"الانجراف", tag:"مهارة", sd:"المس لتنعطف وابقَ على الطريق المتعرج", start:driftStart,
+  icon:'<rect x="4" y="4" width="56" height="56" rx="8" fill="#3fb5a3"/><path d="M14 58L36 36L20 20L40 4" stroke="#f6e3c3" stroke-width="10" fill="none" stroke-linejoin="round"/><rect x="30" y="30" width="10" height="14" rx="3" fill="#e53935" transform="rotate(45 35 37)"/>',
+  desc:"سيارتك تنطلق على طريق متعرج فوق الماء: المس الشاشة في اللحظة المناسبة لتغيّر الاتجاه عند كل منعطف، ولا تخرج عن الطريق!",
+  instr:["المس اللعبة (أو زر «انعطف» أو المسافة) فتغيّر السيارة اتجاهها بين اليمين واليسار.",
+         "ابقَ على الطريق: إذا خرجت عنه تسقط وتنتهي اللعبة. السرعة تزداد كلما تقدمت.",
+         "الانعطاف عند الزاوية تماماً يعطيك «ممتاز!» ونقاطاً إضافية تتضاعف بالتتابع، والجواهر الزرقاء +5.",
+         "نقاطك = المسافة بالأمتار + الجواهر + مكافآت الانعطاف الممتاز."],
+  options:[{key:"lv", label:"عرض الطريق", choices:[["عريض - سهل",1],["متوسط",2],["ضيق - صعب",3]]}]});
+
+/* تسجيل الألعاب الجديدة في القائمة */
+(function(){
+  for(var i = 0; i < LABG.length; i++){ GAMES.push(LABG[i]); ICO[LABG[i].id] = LABG[i].icon; }
+  var add = ["cross", "merge", "rope", "land", "worm", "drift", "t2048", "sudoku", "sort", "onet", "flow", "park", "blocks", "untangle", "hroof", "typo", "hang", "flags", "alch", "match"];
+  for(i = 0; i < add.length; i++) if(GAME_ORDER.indexOf(add[i]) < 0) GAME_ORDER.push(add[i]);
+})();
+/* [إضافة v14 - عشرون لعبة جديدة] نهاية
    ===================================================================== */
 
 })();
