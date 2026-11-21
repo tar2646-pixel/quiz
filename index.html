@@ -232,8 +232,9 @@ label{display:block;margin:10px 0 4px;font-size:18px}
 .tnext{background:rgba(255,200,61,.45);border-radius:4px}
 #tinput{max-width:760px;display:block;margin:6px auto;direction:rtl}
 
-/* لوحة تحكم اللمس: يد ألعاب لكلتا اليدين (العصا أو الأسهم يساراً، والأزرار يميناً) */
-.vpad{direction:ltr;display:flex;display:-webkit-flex;align-items:stretch;-webkit-align-items:stretch;
+/* لوحة تحكم اللمس: يد ألعاب لكلتا اليدين (العصا أو الأسهم يساراً، والأزرار يميناً)
+   --pz حجم يختاره اللاعب، و--pzs تصغير تلقائي للشاشات الصغيرة */
+.vpad{--pz:1.15;--pzs:1;direction:ltr;display:flex;display:-webkit-flex;align-items:stretch;-webkit-align-items:stretch;
   width:100%;margin:10px 0 4px;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;box-sizing:border-box}
 .vpad-main{flex:1;-webkit-flex:1;min-height:170px;display:flex;display:-webkit-flex;align-items:center;-webkit-align-items:center;
   padding-left:max(6px,env(safe-area-inset-left));touch-action:none;cursor:pointer}
@@ -241,11 +242,16 @@ label{display:block;margin:10px 0 4px;font-size:18px}
 .vpad-side{flex:1;-webkit-flex:1;display:flex;display:-webkit-flex;flex-direction:row-reverse;-webkit-flex-direction:row-reverse;
   align-items:center;-webkit-align-items:center;padding-right:max(6px,env(safe-area-inset-right));touch-action:none}
 .vpad.solo .vpad-side{display:none}
-.vjoy{position:relative;width:150px;height:150px;margin:0 auto;border-radius:50%;touch-action:none;
+.vpad-main,.vpad-side{min-width:0}
+.vbtn{flex:none;-webkit-flex:none}
+@media (max-width:600px){ .vbtn{margin:4px 3px} }
+.vjoy{position:relative;width:170px;height:170px;margin:0 auto;border-radius:50%;touch-action:none;
+  width:min(calc(150px * var(--pz) * var(--pzs)),43vw);height:min(calc(150px * var(--pz) * var(--pzs)),43vw);
   background:radial-gradient(circle,rgba(255,255,255,.16) 0%,rgba(255,255,255,.06) 62%,rgba(255,255,255,.12) 100%);
   border:3px solid rgba(255,200,61,.55);box-shadow:inset 0 0 22px rgba(0,0,0,.45),0 6px 16px rgba(0,0,0,.35)}
 .vjoy.act{border-color:#ffc83d}
-.vjoy-knob{position:absolute;left:50%;top:50%;width:66px;height:66px;margin:-33px 0 0 -33px;border-radius:50%;pointer-events:none;
+.vjoy-knob{position:absolute;left:50%;top:50%;width:76px;height:76px;margin:-38px 0 0 -38px;border-radius:50%;pointer-events:none;
+  width:44%;height:44%;margin:-22% 0 0 -22%;
   background:radial-gradient(circle at 35% 30%,#fff3c4 0%,#ffc83d 35%,#ff7a3d 100%);border:3px solid #fff;box-shadow:0 6px 14px rgba(0,0,0,.5)}
 .vjoy-knob.on{background:radial-gradient(circle at 35% 30%,#d9fff0 0%,#3ddc97 40%,#13915a 100%)}
 .vjoy-arrows .ja{position:absolute;color:rgba(255,232,160,.75);font-size:16px;line-height:16px;pointer-events:none;font-family:Arial,sans-serif}
@@ -253,33 +259,36 @@ label{display:block;margin:10px 0 4px;font-size:18px}
 .ja.l{left:8px;top:50%;margin-top:-8px}.ja.r{right:8px;top:50%;margin-top:-8px}
 .vkeys{display:inline-block;padding:8px 10px 10px;border-radius:16px;background:#1b1440;border:2px solid rgba(255,255,255,.15);box-shadow:inset 0 2px 8px rgba(0,0,0,.6)}
 .vk-row{display:flex;display:-webkit-flex;justify-content:center;-webkit-justify-content:center}
-.vkey{width:62px;height:60px;margin:4px;border-radius:10px;
-  font:bold 26px/50px Arial,Tahoma,sans-serif;color:#2a2a3a;text-align:center;
+.vkey{width:62px;height:60px;margin:4px;border-radius:10px;text-align:center;color:#2a2a3a;font-weight:bold;font-family:Arial,Tahoma,sans-serif;font-size:26px;line-height:50px;
+  width:min(calc(56px * var(--pz) * var(--pzs)),21vw);height:calc(54px * var(--pz) * var(--pzs));line-height:calc(44px * var(--pz) * var(--pzs));font-size:calc(24px * var(--pz) * var(--pzs));
   background:linear-gradient(#ffffff,#d8d4e8);border:1px solid #9a94b8;border-bottom:7px solid #8f88ad;box-shadow:0 3px 6px rgba(0,0,0,.45)}
-.vkey.on{background:linear-gradient(#ffe08a,#ffc83d);border-bottom-width:2px;margin-top:9px;height:55px;color:#2a1060}
-.vkeys.flat .vkey{width:80px}
-.vpad-switch{margin-top:8px;white-space:nowrap}
+.vkey.on{background:linear-gradient(#ffe08a,#ffc83d);border-bottom-width:2px;-webkit-transform:translateY(5px);transform:translateY(5px);color:#2a1060}
+.vkeys.flat .vkey{width:min(calc(74px * var(--pz) * var(--pzs)),21vw)}
+.vpad-switch{margin-top:6px;white-space:nowrap}
 .vsw{border:2px solid rgba(255,200,61,.6);background:transparent;color:#ffe08a;border-radius:14px;padding:3px 10px;margin:0 2px;font-family:inherit;font-size:13px;cursor:pointer}
 .vsw.sel{background:#ffc83d;color:#2a1060;font-weight:bold}
+.vsw.vsz{width:34px;height:30px;padding:0;font:bold 20px/24px Arial,sans-serif;border-radius:50%}
+.vsz-lbl{display:inline-block;color:#ffe08a;font-size:12px;margin:0 3px;vertical-align:middle;direction:rtl}
 .vbtn{width:88px;height:88px;margin:6px;border-radius:50%;cursor:pointer;touch-action:none;-webkit-user-select:none;user-select:none;padding:0;
   font:bold 19px Tahoma,Arial,sans-serif;color:#fff;border:3px solid #fff;
+  width:min(calc(80px * var(--pz) * var(--pzs)),19vw);height:min(calc(80px * var(--pz) * var(--pzs)),19vw);font-size:calc(17px * var(--pz) * var(--pzs));
   background:radial-gradient(circle at 35% 30%,#b8a6ff,#6a4ad8 70%,#3d2690);box-shadow:0 7px 0 rgba(0,0,0,.35),0 8px 16px rgba(0,0,0,.35)}
 .vbtn:active{-webkit-transform:translateY(4px);transform:translateY(4px);box-shadow:0 3px 0 rgba(0,0,0,.35)}
-.vbtn.b1{margin-top:44px}            /* القفز: أسفل أقصى اليمين تحت الإبهام */
-.vbtn.b2{margin-bottom:44px}         /* الإطلاق: أعلى منه قليلاً */
+.vbtn.b1{margin-top:calc(40px * var(--pz) * var(--pzs))}      /* الزر الأساسي: أسفل أقصى اليمين تحت الإبهام */
+.vbtn.b2{margin-bottom:calc(40px * var(--pz) * var(--pzs))}   /* الزر الثاني: أعلى منه قليلاً */
 .vbtn.gold{color:#2a1060;background:radial-gradient(circle at 35% 30%,#fff3c4,#ffc83d 60%,#d99a00)}
 .vbtn.red{background:radial-gradient(circle at 35% 30%,#ffb3a8,#ff5a46 60%,#b83a2b)}
-@media (max-width:480px){
-  .vjoy{width:132px;height:132px}.vjoy-knob{width:58px;height:58px;margin:-29px 0 0 -29px}
-  .vkey{width:52px;height:52px;line-height:42px;font-size:22px;margin:3px}.vkey.on{height:47px;margin-top:8px}
-  .vkeys.flat .vkey{width:64px}
-  .vbtn{width:78px;height:78px;font-size:17px;margin:4px}
-}
+.vbtn.off{opacity:.45;-webkit-filter:grayscale(.7);filter:grayscale(.7)}
+.vbtn.full{-webkit-animation:vpulse .7s infinite alternate;animation:vpulse .7s infinite alternate}
+@-webkit-keyframes vpulse{from{box-shadow:0 7px 0 rgba(0,0,0,.35),0 0 6px #ffc83d}to{box-shadow:0 7px 0 rgba(0,0,0,.35),0 0 26px 6px #ffc83d}}
+@keyframes vpulse{from{box-shadow:0 7px 0 rgba(0,0,0,.35),0 0 6px #ffc83d}to{box-shadow:0 7px 0 rgba(0,0,0,.35),0 0 26px 6px #ffc83d}}
+@media (max-width:480px){ .vpad{--pzs:.9} }
 /* وضع تكبير الشاشة والجوال بالعرض: التحكم على جانبي اللعبة فوقها، مثل ألعاب المحاكاة */
 .playwrap.fs .stage{position:relative}
-.playwrap.fs .vpad{position:absolute;left:0;right:0;bottom:0;margin:0;pointer-events:none;z-index:5}
+.playwrap.fs .vpad{position:absolute;left:0;right:0;bottom:0;margin:0;pointer-events:none;z-index:5;justify-content:space-between;-webkit-justify-content:space-between}
+.playwrap.fs .vpad-main,.playwrap.fs .vpad-side{flex:0 0 auto;-webkit-flex:0 0 auto;min-height:0}   /* لا تغطي اللعبة: لمس اللعبة يبقى لها */
 .playwrap.fs .vpad-main,.playwrap.fs .vpad-side{pointer-events:auto;opacity:.85}
-.playwrap.fs .vpad-main{-webkit-box-align:end;align-items:flex-end;-webkit-align-items:flex-end;padding-bottom:6px}
+.playwrap.fs .vpad-main{align-items:flex-end;-webkit-align-items:flex-end;padding-bottom:6px}
 .playwrap.fs .vpad-side{align-items:flex-end;-webkit-align-items:flex-end;padding-bottom:6px}
 @media (max-height:520px){
   .playwrap.fs{padding:4px 10px}
@@ -288,11 +297,13 @@ label{display:block;margin:10px 0 4px;font-size:18px}
   .playwrap.fs .pbtns .btn{padding:4px 12px;font-size:14px;margin:2px}
   .playwrap.fs .hud.inflow{margin-bottom:2px}
   .playwrap.fs .hud.inflow .hchip{font-size:14px;padding:1px 10px}
-  .playwrap.fs .vjoy{width:120px;height:120px}.playwrap.fs .vjoy-knob{width:54px;height:54px;margin:-27px 0 0 -27px}
-  .playwrap.fs .vbtn{width:72px;height:72px;font-size:16px}
-  .playwrap.fs .vbtn.b1{margin-top:30px}.playwrap.fs .vbtn.b2{margin-bottom:30px}
-  .playwrap.fs .vkey{width:48px;height:46px;line-height:36px;font-size:20px;margin:2px}.playwrap.fs .vkey.on{height:41px;margin-top:7px}
-  .playwrap.fs .vpad-switch{display:none}
+  .playwrap.fs .vpad{--pzs:.78}
+  .playwrap.fs .vjoy{width:calc(150px * var(--pz) * var(--pzs));height:calc(150px * var(--pz) * var(--pzs))}
+  .playwrap.fs .vbtn{width:calc(80px * var(--pz) * var(--pzs));height:calc(80px * var(--pz) * var(--pzs))}
+  .playwrap.fs .vpad-switch{margin-top:3px}
+  .playwrap.fs .vsw{font-size:11px;padding:1px 6px}
+  .playwrap.fs .vsw.vsz{width:26px;height:24px;font-size:16px;line-height:18px}
+  .playwrap.fs .vsz-lbl{font-size:10px}
 }
 
 /* ترتيب لوحة المفاتيح: الأحجام تتبع حجم الشاشة لتظهر اللوحة والحروف معاً دون تمرير */
@@ -3080,6 +3091,9 @@ function holdBtn(label, cls, onDown, onUp){
    cfg.onPress(dx, dy): تُستدعى عند بدء اتجاه جديد، وتتكرر كل cfg.repeat ملّي ثانية ما دام مضغوطاً
    cfg.buttons: [{label, cls, down, up}] أزرار إضافية كبيرة (قفز، إطلاق...) */
 function padPref(){ var v = load("qz2_pad", "joy"); return v === "keys" ? "keys" : "joy"; }
+/* حجم أدوات التحكم: يختاره اللاعب بزرّي − و+ ويُحفظ للمرات القادمة */
+var PAD_SIZES = [0.8, 0.9, 1, 1.15, 1.3, 1.45, 1.6];
+function padSizeIdx(){ var v = load("qz2_padsz", 3); v = parseInt(v, 10); return (v >= 0 && v < PAD_SIZES.length) ? v : 3; }
 function isCoarse(){ try{ return !!(window.matchMedia && matchMedia("(pointer:coarse)").matches) || ("ontouchstart" in window); }catch(e){ return false; } }
 /* الجوال بالعرض: تكبير اللعبة تلقائياً ووضع التحكم على جانبيها مثل ألعاب المحاكاة */
 function padLandCheck(){
@@ -3089,7 +3103,7 @@ function padLandCheck(){
   else if(!land && G.autoFs && pseudoFs){ G.autoFs = false; pseudoFs = false; applyFs(); }
 }
 function makePad(cfg){
-  var mode = cfg.mode || "4", kind = padPref();
+  var mode = cfg.mode || "4", kind = padPref(), szi = padSizeIdx();
   var wrap = el("div", "vpad"), main = el("div", "vpad-main"), side = el("div", "vpad-side"), holder = el("div", "vpad-holder");
   var cur = {x:0, y:0}, rptT = null, zoneFn = null;
   main.appendChild(holder); wrap.appendChild(main); wrap.appendChild(side);
@@ -3242,7 +3256,23 @@ function makePad(cfg){
     sw.appendChild(mkbtn("عصا تحكم", "vsw" + (kind === "joy" ? " sel" : ""), function(){ kind = "joy"; save("qz2_pad", kind); buildMain(); }));
     sw.appendChild(mkbtn("أسهم", "vsw" + (kind === "keys" ? " sel" : ""), function(){ kind = "keys"; save("qz2_pad", kind); buildMain(); }));
     holder.appendChild(sw);
+    var sz = el("div", "vpad-switch vpad-size");
+    sz.appendChild(mkbtn("−", "vsw vsz", function(){ setSize(szi - 1); }));
+    sz.appendChild(el("span", "vsz-lbl", "حجم التحكم " + Math.round(PAD_SIZES[szi] * 100) + "%"));
+    sz.appendChild(mkbtn("+", "vsw vsz", function(){ setSize(szi + 1); }));
+    holder.appendChild(sz);
   }
+  function applySize(){
+    var f = PAD_SIZES[szi];
+    if(wrap.style.setProperty) wrap.style.setProperty("--pz", String(f));
+  }
+  function setSize(n){
+    n = Math.max(0, Math.min(PAD_SIZES.length - 1, n));
+    if(n === szi) return;
+    szi = n; save("qz2_padsz", szi); applySize(); buildMain();
+    if(isFs()) fitCanvas();
+  }
+  applySize();
   buildMain();
 
   /* أزرار الإبهام الأيمن: الأول (القفز) في أقصى اليمين وأسفل، والثاني أعلى منه قليلاً مثل يد الألعاب */
@@ -3685,9 +3715,9 @@ function daveStart(o){
   gListen(document, "keyup", function(e){ setKey(e, false); });
 
   /* تحكم اللمس: عصا التحكم (أو الأسهم) للحركة، ودفعها للأعلى يقفز، مع زرّي قفز وإطلاق */
-  var padU = false, btnU = false;
-  makePad({mode:"xu", onDir:function(dx, dy){ keys.l = dx < 0; keys.r = dx > 0; padU = dy < 0; keys.u = padU || btnU; },
-           buttons:[{label:"قفز", cls:"gold", down:function(){ btnU = true; keys.u = true; }, up:function(){ btnU = false; keys.u = padU; }},
+  /* العصا للحركة يميناً ويساراً فقط، والقفز من زرّه في جهة اليمين */
+  makePad({mode:"x", onDir:function(dx){ keys.l = dx < 0; keys.r = dx > 0; },
+           buttons:[{label:"قفز", cls:"gold", down:function(){ keys.u = true; }, up:function(){ keys.u = false; }},
                     {label:"إطلاق", cls:"red", down:function(){ keys.f = true; }, up:function(){ keys.f = false; }}]});
 
   var snd = {
@@ -4153,17 +4183,50 @@ function carStart(o){
   var ctx = G.ctx, CARW = 54, CARH = 92, CY = CH - 80;
   var lane = lanes === 2 ? 1 : 1, carX = 0, lives = 3, inv = 0, fuel = 100, dist = 0, score = 0, pick_ = 0, coins = 0, fuels = 0;
   var objs = [], deco = [], popups = [], scroll = 0, until = 260, state = "count", countT = 3.2, ended = false, shake = 0, speed = base, endWhy = "";
+  /* الحماس: النيترو، المرور القريب، سلسلة العملات، تحطيم الحواجز أثناء النيترو، وعلامات المسافة */
+  var nitro = 30, boost = 0, boostMax = 0, combo = 0, comboT = 0, nears = 0, smashed = 0, bestCombo = 0, nextMark = 500, banner = null, lines = [], flameT = 0;
+  for(var l0 = 0; l0 < 14; l0++) lines.push({x:rnd(0, CW), y:rnd(0, CH), l:rnd(40, 110)});
   function laneX(i){ return RX + LW * (i + 0.5); }
   carX = laneX(lane);
   for(var d0 = 0; d0 < 8; d0++) deco.push({side:d0 % 2, y:d0 * 70, k:Math.random() < 0.6 ? "palm" : "rock", off:rnd(20, RX - 40)});
-  function move(dir){ if(state === "over") return; var nl = Math.max(0, Math.min(lanes - 1, lane + dir)); if(nl !== lane){ lane = nl; beep(500, 30); } }
+  function setLane(nl){ if(state === "over") return; nl = Math.max(0, Math.min(lanes - 1, nl)); if(nl !== lane){ lane = nl; beep(500, 30); } }
+  function move(dir){ setLane(lane + dir); }
+  function fireNitro(){
+    if(state !== "run" || boost > 0) return;
+    if(nitro < 30){ popups.push({x:carX, y:CY - 70, t:0, s:"اجمع العملات لشحن النيترو", c:"#ffe08a"}); beep(220, 90, "square"); return; }
+    boostMax = boost = 1 + 3 * nitro / 100; nitro = 0; shake = 0.25;
+    banner = {s:"نيترو!", t:0, c:"#ff9b3d"};
+    beep(300, 90, "sawtooth"); setTimeout(function(){ beep(600, 120, "sawtooth"); }, 80); setTimeout(function(){ beep(900, 160, "sawtooth"); }, 170);
+  }
   gListen(document, "keydown", function(e){
     e = e || window.event; var c = e.keyCode;
     if(c === 37 || c === 65){ move(-1); stopKey(e); } else if(c === 39 || c === 68){ move(1); stopKey(e); }
-    else if(c === 38 || c === 40 || c === 32) stopKey(e);
+    else if(c === 38 || c === 87 || c === 32){ fireNitro(); stopKey(e); }
+    else if(c === 40) stopKey(e);
+    else if(c >= 49 && c <= 51){ setLane(c - 49); stopKey(e); }
   });
-  gListen(G.canvas, "mousedown", function(e){ var p = canvasPos(e); move(p.x < carX ? -1 : 1); });
-  makePad({mode:"x", repeat:260, onPress:function(dx){ move(dx); }});
+  /* اللمس والماوس على اللعبة: المس مساراً فتنتقل إليه مباشرة أينما كانت السيارة، أو اسحب إصبعك فتتبعه السيارة،
+     والمس خارج الطريق يميناً أو يساراً لتنتقل مساراً واحداً في ذلك الاتجاه */
+  function laneAt(x){ return (x >= RX && x < RX + RW) ? Math.floor((x - RX) / LW) : null; }
+  function steer(x, tap){ var l = laneAt(x); if(l !== null) setLane(l); else if(tap) move(x < RX ? -1 : 1); }
+  function tX(t){ var r = G.canvas.getBoundingClientRect(); return (t.clientX - r.left) * CW / r.width; }
+  var tid = null, mdrag = false;
+  gListen(G.canvas, "touchstart", function(e){
+    if(e.cancelable && e.preventDefault) e.preventDefault();
+    var t = e.changedTouches[0]; if(tid === null) tid = t.identifier; steer(tX(t), true);
+  });
+  gListen(G.canvas, "touchmove", function(e){
+    if(e.cancelable && e.preventDefault) e.preventDefault();
+    for(var i = 0; i < e.changedTouches.length; i++) if(e.changedTouches[i].identifier === tid) steer(tX(e.changedTouches[i]), false);
+  });
+  function tEnd(e){ for(var i = 0; i < e.changedTouches.length; i++) if(e.changedTouches[i].identifier === tid) tid = null; }
+  gListen(G.canvas, "touchend", tEnd); gListen(G.canvas, "touchcancel", tEnd);
+  gListen(G.canvas, "mousedown", function(e){ if(e.fromTouch) return; mdrag = true; steer(canvasPos(e).x, true); });
+  gListen(document, "mousemove", function(e){ if(mdrag && !e.fromTouch) steer(canvasPos(e).x, false); });
+  gListen(document, "mouseup", function(){ mdrag = false; });
+  var pad = makePad({mode:"x", repeat:260, onPress:function(dx){ move(dx); },
+                     buttons:[{label:"نيترو", cls:"red", down:fireNitro}]});
+  var nBtn = pad.querySelector ? pad.querySelector(".vbtn") : null;
 
   function spawnRow(){
     var free = [], i, nObs = 1;
@@ -4188,7 +4251,7 @@ function carStart(o){
     return Math.abs(ox - carX) < (w + CARW) / 2 - 8 && Math.abs(ob.y - CY) < (h + CARH) / 2 - 8;
   }
   function gameOver(why){ if(state === "over") return; state = "over"; endWhy = why; shake = 0.5; beep(140, 500, "sawtooth"); gTimeout(function(){ if(!ended){ ended = true; endGame(score, info()); } }, 1600); }
-  function info(){ return (endWhy ? endWhy + " | " : "") + "المسافة: " + Math.floor(dist) + " م | الوقود الملتقط: " + fuels + " | العملات: " + coins; }
+  function info(){ return (endWhy ? endWhy + " | " : "") + "المسافة: " + Math.floor(dist) + " م | العملات: " + coins + " (أطول سلسلة ×" + bestCombo + ") | مرور قريب: " + nears + " | حواجز محطمة: " + smashed + " | الوقود الملتقط: " + fuels; }
   function drawObj(ob){
     var x = laneX(ob.lane), y = ob.y;
     if(ob.k === "car") drawCarTop(ctx, x, y, CARW, CARH, ob.col[0], ob.col[1]);
@@ -4214,20 +4277,42 @@ function carStart(o){
     var i, dy = 0;
     if(state === "count"){ countT -= dt; if(countT <= 0) state = "run"; }
     if(state === "run"){
-      speed = base * (1 + Math.min(dist / 2500, 0.9));
-      dy = speed * dt; scroll += dy; dist += dy / 8;
+      speed = base * (1 + Math.min(dist / 2500, 0.9)) * (boost > 0 ? 1.75 : 1);
+      dy = speed * dt; scroll += dy; dist += dy / 8 * (boost > 0 ? 2 : 1);
+      if(boost > 0){ boost -= dt; if(boost <= 0){ boost = 0; inv = Math.max(inv, 0.6); } }
+      if(comboT > 0){ comboT -= dt; if(comboT <= 0) combo = 0; }
+      if(dist >= nextMark){ banner = {s:nextMark + " متر!", t:0, c:"#8dffb8"}; pick_ += Math.round(50 * MULT); nextMark += 500; beep(880, 80); setTimeout(function(){ beep(1320, 140); }, 90); }
       fuel -= drain * dt * (0.8 + 0.2 * speed / base);
       if(fuel <= 0){ fuel = 0; gameOver("نفد الوقود"); }
       until -= dy; if(until <= 0){ spawnRow(); until = gap * rnd(0.85, 1.2) * (1 + Math.min(dist / 2500, 0.9) * 0.35); }
       if(inv > 0) inv -= dt;
       for(i = objs.length - 1; i >= 0; i--){
-        var ob = objs[i]; ob.y += dy;
+        var ob = objs[i], py0 = ob.y; ob.y += dy;
         if(ob.y > CH + 80){ objs.splice(i, 1); continue; }
+        /* مرور قريب: عائق يمرّ بجانب السيارة مباشرة دون أن يصيبها */
+        if((ob.k === "car" || ob.k === "cone" || ob.k === "barrier") && !ob.near && py0 < CY && ob.y >= CY && ob.lane !== lane && Math.abs(laneX(ob.lane) - carX) < LW * 1.2 && !hitObj(ob)){
+          ob.near = true; nears++; nitro = Math.min(100, nitro + 12);
+          var np = Math.round(15 * MULT); pick_ += np;
+          popups.push({x:(laneX(ob.lane) + carX) / 2, y:CY - 60, t:0, s:"قريب جداً! +" + np, c:"#4dd0e1"}); beep(1500, 50);
+        }
         if(!hitObj(ob)) continue;
-        if(ob.k === "fuel"){ fuel = Math.min(100, fuel + 30); fuels++; var fp = Math.round(25 * MULT); pick_ += fp; popups.push({x:laneX(ob.lane), y:ob.y - 20, t:0, s:"+وقود", c:"#8dffb8"}); beep(700, 70); setTimeout(function(){ beep(940, 110); }, 70); objs.splice(i, 1); }
-        else if(ob.k === "coin"){ coins++; var cp = Math.round(5 * MULT); pick_ += cp; popups.push({x:laneX(ob.lane), y:ob.y - 10, t:0, s:"+" + cp, c:"#ffd700"}); beep(1200, 40); objs.splice(i, 1); }
+        if(ob.k === "fuel"){ fuel = Math.min(100, fuel + 30); fuels++; nitro = Math.min(100, nitro + 10); var fp = Math.round(25 * MULT); pick_ += fp; popups.push({x:laneX(ob.lane), y:ob.y - 20, t:0, s:"+وقود", c:"#8dffb8"}); beep(700, 70); setTimeout(function(){ beep(940, 110); }, 70); objs.splice(i, 1); }
+        else if(ob.k === "coin"){
+          coins++; combo = comboT > 0 ? combo + 1 : 1; comboT = 1.1; if(combo > bestCombo) bestCombo = combo;
+          nitro = Math.min(100, nitro + 7);
+          var cp = Math.round(5 * MULT * Math.min(combo, 6)); pick_ += cp;
+          popups.push({x:laneX(ob.lane), y:ob.y - 10, t:0, s:"+" + cp + (combo > 1 ? " ×" + Math.min(combo, 6) : ""), c:"#ffd700"});
+          beep(1000 + Math.min(combo, 8) * 80, 40); objs.splice(i, 1);
+        }
+        else if(boost > 0){
+          /* أثناء النيترو: السيارة تحطم الحواجز وتكسب نقاطاً */
+          smashed++; var sp = Math.round(40 * MULT); pick_ += sp; shake = 0.2;
+          popups.push({x:laneX(ob.lane), y:ob.y - 30, t:0, s:"تحطيم! +" + sp, c:"#ff9b3d"});
+          for(var q = 0; q < 10; q++) popups.push({x:laneX(ob.lane) + rnd(-30, 30), y:ob.y + rnd(-30, 30), t:rnd(0.3, 0.7), s:"✦", c:pick(["#ffc83d","#ff7a3d","#fff"])});
+          beep(160, 120, "square"); objs.splice(i, 1);
+        }
         else if(inv <= 0){
-          lives--; inv = 1.6; shake = 0.35; objs.splice(i, 1); beep(150, 260, "square");
+          lives--; inv = 1.6; shake = 0.35; combo = 0; objs.splice(i, 1); beep(150, 260, "square");
           popups.push({x:carX, y:CY - 60, t:0, s:"اصطدام!", c:"#ff9b8f"});
           if(lives <= 0) gameOver("تحطمت السيارة");
         }
@@ -4256,17 +4341,47 @@ function carStart(o){
     ctx.fillStyle = "#f2f2f2";
     for(var ln = 1; ln < lanes; ln++) for(i = -1; i < 8; i++){ var my = (i * 80 + scroll) % 640 - 80; ctx.fillRect(RX + ln * LW - 3, my, 6, 44); }
     for(i = 0; i < objs.length; i++) drawObj(objs[i]);
-    if(!(inv > 0 && Math.floor(inv * 10) % 2 === 0) && state !== "over") drawCarTop(ctx, carX, CY, CARW, CARH, "#ffc83d", "#d99a00");
+    /* خطوط السرعة */
+    var fast = state === "run" ? Math.max(0, (speed / base - 1.25) / 0.6) + (boost > 0 ? 1 : 0) : 0;
+    if(fast > 0){
+      ctx.strokeStyle = boost > 0 ? "rgba(255,200,120,.55)" : "rgba(255,255,255,.35)"; ctx.lineWidth = 2;
+      for(i = 0; i < lines.length; i++){
+        var sl = lines[i]; sl.y += speed * dt * 2.2; if(sl.y > CH + 120){ sl.y = -120; sl.x = rnd(0, CW); }
+        ctx.globalAlpha = Math.min(1, fast); ctx.beginPath(); ctx.moveTo(sl.x, sl.y); ctx.lineTo(sl.x, sl.y + sl.l * (1 + fast)); ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
+    }
+    if(!(inv > 0 && Math.floor(inv * 10) % 2 === 0) && state !== "over"){
+      var tilt = Math.max(-0.28, Math.min(0.28, (laneX(lane) - carX) * 0.005));
+      ctx.save(); ctx.translate(carX, CY); ctx.rotate(tilt);
+      if(boost > 0){
+        flameT += dt;
+        for(i = 0; i < 3; i++){
+          var fl = 18 + Math.random() * 22 + Math.sin(flameT * 40 + i) * 6;
+          ctx.fillStyle = i === 0 ? "rgba(255,80,20,.85)" : i === 1 ? "rgba(255,170,40,.85)" : "rgba(255,240,160,.9)";
+          ctx.beginPath(); ctx.moveTo(-14 + i * 4, CARH / 2 - 4); ctx.lineTo(0, CARH / 2 + fl * (1 - i * 0.25)); ctx.lineTo(14 - i * 4, CARH / 2 - 4); ctx.fill();
+        }
+        ctx.fillStyle = "rgba(255,150,60,.18)"; ctx.beginPath(); ctx.arc(0, 0, CARH * 0.75, 0, 6.2832); ctx.fill();
+      }
+      drawCarTop(ctx, 0, 0, CARW, CARH, boost > 0 ? "#ff9b3d" : "#ffc83d", boost > 0 ? "#d9531e" : "#d99a00");
+      ctx.restore();
+    }
     if(state === "over"){ ctx.fillStyle = "#ff7a1a"; for(i = 0; i < 6; i++){ ctx.globalAlpha = 0.6; ctx.beginPath(); ctx.arc(carX + rnd(-20, 20), CY + rnd(-30, 30), rnd(10, 24), 0, 6.2832); ctx.fill(); } ctx.globalAlpha = 1; drawCarTop(ctx, carX, CY, CARW, CARH, "#7a6a4a", "#4a3a2a"); }
     ctx.restore();
     drawPopups(ctx, popups, dt);
     if(state === "count"){ var cn = Math.ceil(countT - 0.2); bigText(ctx, cn > 0 ? String(cn) : "انطلق!", CW / 2, CH / 2 - 30, cn > 0 ? 110 : 80, "#ffc83d", "#2a1060"); }
     if(state === "run" && fuel < 25 && Math.floor(scroll / 40) % 2 === 0) bigText(ctx, "الوقود منخفض!", CW / 2, 50, 30, "#ff9b8f", "#2a1060");
+    if(boost > 0){ ctx.fillStyle = "rgba(255,120,30," + (0.08 + Math.random() * 0.05) + ")"; ctx.fillRect(0, 0, CW, CH); }
+    if(combo > 1 && comboT > 0) bigText(ctx, "سلسلة ×" + Math.min(combo, 6), CW - RX / 2, 40, 24, "#ffd700", "#2a1060");
+    if(banner){ banner.t += dt; var ba = 1 - Math.max(0, banner.t - 0.8) / 0.4, bs = 1 + Math.max(0, 0.25 - banner.t) * 2;
+      if(ba <= 0) banner = null; else { ctx.globalAlpha = ba; bigText(ctx, banner.s, CW / 2, CH / 2 - 60, Math.round(62 * bs), banner.c, "#2a1060"); ctx.globalAlpha = 1; } }
+    if(nBtn){ var rdy = nitro >= 30 && boost <= 0 && state === "run", nc = "vbtn red b1" + (rdy ? (nitro >= 100 ? " full" : "") : " off"); if(nBtn.className !== nc) nBtn.className = nc; }
     if(state === "over") bigText(ctx, endWhy, CW / 2, CH / 2 - 40, 50, "#ff9b8f", "#2a1060");
     var hs = ""; for(i = 0; i < 3; i++) hs += starSvg(i < lives);
     var fc = fuel < 25 ? "#ff9b8f" : fuel < 50 ? "#ffe08a" : "#8dffb8";
     setHud('<span class="hchip">' + hs + '</span>' + chip("النقاط", score) + chip("المسافة", Math.floor(dist) + " م") + chip("السرعة", Math.round(speed / 3) + " كم/س") +
-      '<span class="hchip">الوقود <span class="fuelbar"><span style="width:' + Math.round(fuel) + '%;background:' + fc + '"></span></span></span>', true);
+      '<span class="hchip">الوقود <span class="fuelbar"><span style="width:' + Math.round(fuel) + '%;background:' + fc + '"></span></span></span>' +
+      '<span class="hchip">النيترو <span class="fuelbar"><span style="width:' + Math.round(boost > 0 ? boost / boostMax * 100 : nitro) + '%;background:' + (boost > 0 ? "#ff7a3d" : nitro >= 30 ? "#4dd0e1" : "#7f8c9a") + '"></span></span></span>', true);
   });
   G.finishFn = function(){ if(!ended){ ended = true; endWhy = ""; endGame(score, info()); } };
 }
@@ -4275,7 +4390,9 @@ function carStart(o){
 GAMES.push(
  {id:"car", name:"سباق الوقود", tag:"مهارة", icon:ICO.car, sd:"قُد السيارة واجمع الوقود", start:carStart,
   desc:"سيارتك تنطلق على طريق صحراوي: غيّر المسار لتتفادى الحواجز، واجمع الوقود قبل أن ينفد.",
-  instr:["غيّر مسار السيارة بالسهمين ← → (أو A وD)، أو بالضغط يمين السيارة ويسارها، أو بسحب عصا التحكم تحت اللعبة يميناً ويساراً (أو أسهم لوحة المفاتيح على الشاشة).",
+  instr:["طرق كثيرة للقيادة: المس أي مسار على الطريق فتنتقل السيارة إليه مباشرة أينما كانت، أو اسحب إصبعك على الطريق فتتبعه السيارة، أو المس خارج الطريق يميناً أو يساراً لتنتقل مساراً واحداً. ويمكنك أيضاً استخدام عصا التحكم (أو الأسهم) بالإبهام الأيسر، أو السهمين ← → في لوحة المفاتيح.",
+         "النيترو: كل عملة وعلبة وقود ومرور قريب تشحن عداد النيترو. اضغط زر «نيترو» بالإبهام الأيمن (أو المسافة / السهم ↑) فتنطلق بسرعة هائلة وتتضاعف نقاط المسافة وتحطّم أي حاجز في طريقك!",
+         "مرّ بجانب العوائق مباشرة دون لمسها لتحصل على مكافأة «قريب جداً»، واجمع العملات متتالية لتصنع سلسلة حتى ×6، وكل 500 متر مكافأة.",
          "تفادَ السيارات المتوقفة والمخاريط والحواجز: كل اصطدام يُفقدك نجمة من ثلاث.",
          "الوقود ينقص باستمرار، فالتقط علب الوقود الحمراء لتملأ الخزان. إذا نفد الوقود تنتهي اللعبة.",
          "تكسب نقاطاً عن كل متر تقطعه، وعن العملات الذهبية وعلب الوقود. السرعة تزداد كلما تقدمت.",
@@ -4283,7 +4400,7 @@ GAMES.push(
   options:[{key:"lv", label:"مستوى الصعوبة", choices:[["سهل - مساران",1],["متوسط - 3 مسارات",2],["صعب - زحام",3]]}]},
  {id:"dave", name:"مغامرة الكنز", tag:"مهارة", icon:ICO.dave, sd:"خمس مراحل من القفز والكنوز", start:daveStart,
   desc:"مغامرة قفز في خمس مراحل: اجمع الجواهر، واحصل على الكأس الذهبي ليُفتح الباب، ثم اخرج إلى المرحلة التالية.",
-  instr:["تحرك بالسهمين ← → (أو A وD)، واقفز بالسهم ↑ أو المسافة. على الأجهزة اللمسية اسحب عصا التحكم (الدائرة الملونة) يميناً ويساراً للحركة وللأعلى للقفز، أو اختر «أسهم» لتظهر أسهم مثل لوحة المفاتيح، ومعها زرّا القفز والإطلاق.",
+  instr:["تحرك بالسهمين ← → (أو A وD)، واقفز بالسهم ↑ أو المسافة. على الأجهزة اللمسية: بالإبهام الأيسر حرّك عصا التحكم (الدائرة الملونة) يميناً ويساراً، أو اختر «أسهم»، وبالإبهام الأيمن زرّا القفز والإطلاق. يمكنك تكبير أدوات التحكم أو تصغيرها بزرّي − و+ تحتها.",
          "اقفز على رأس الوحش لتسقطه فيختفي وتكسب 200 نقطة، وإذا قفزت على عدة وحوش متتالية دون أن تلمس الأرض تتضاعف النقاط (×2، ×3...). اضغط القفز لحظة الهبوط لترتد أعلى.",
          "اجمع الجواهر: الحمراء 100، الخضراء 150، الزرقاء 200. جمعها بسرعة متتالية يصنع سلسلة تضاعف نقاطها.",
          "خذ الكأس الذهبي فيُفتح الباب الأخضر، ثم ادخل الباب لتنهي المرحلة. كلما أنهيتها أسرع زادت مكافأة الوقت.",
