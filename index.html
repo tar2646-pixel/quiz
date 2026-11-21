@@ -232,65 +232,96 @@ label{display:block;margin:10px 0 4px;font-size:18px}
 .tnext{background:rgba(255,200,61,.45);border-radius:4px}
 #tinput{max-width:760px;display:block;margin:6px auto;direction:rtl}
 
-/* لوحة تحكم اللمس: عصا التحكم والأسهم */
-.vpad{direction:ltr;display:flex;display:-webkit-flex;align-items:center;-webkit-align-items:center;justify-content:space-between;-webkit-justify-content:space-between;
-  max-width:760px;margin:12px auto 4px;padding:0 10px;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
-.vpad.solo{justify-content:center;-webkit-justify-content:center}
-/* في وضع تكبير الشاشة: عصا التحكم والأزرار تطفو فوق اللعبة (يسار ويمين) */
-.playwrap.fs .stage{position:relative}
-.playwrap.fs .vpad{position:absolute;left:0;right:0;bottom:8px;max-width:none;margin:0;padding:0 14px;pointer-events:none;opacity:.82;z-index:5}
-.playwrap.fs .vpad.solo{justify-content:flex-start;-webkit-justify-content:flex-start}
-.playwrap.fs .vpad-main,.playwrap.fs .vpad-side{pointer-events:auto}
-.vpad-main{text-align:center}
-.vpad-side{display:flex;display:-webkit-flex;align-items:center;-webkit-align-items:center;flex-wrap:wrap;-webkit-flex-wrap:wrap;justify-content:flex-end;-webkit-justify-content:flex-end}
-.vjoy{position:relative;width:150px;height:150px;margin:0 auto;border-radius:50%;touch-action:none;cursor:pointer;
+/* لوحة تحكم اللمس: يد ألعاب لكلتا اليدين (العصا أو الأسهم يساراً، والأزرار يميناً) */
+.vpad{direction:ltr;display:flex;display:-webkit-flex;align-items:stretch;-webkit-align-items:stretch;
+  width:100%;margin:10px 0 4px;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;box-sizing:border-box}
+.vpad-main{flex:1;-webkit-flex:1;min-height:170px;display:flex;display:-webkit-flex;align-items:center;-webkit-align-items:center;
+  padding-left:max(6px,env(safe-area-inset-left));touch-action:none;cursor:pointer}
+.vpad-holder{text-align:center}
+.vpad-side{flex:1;-webkit-flex:1;display:flex;display:-webkit-flex;flex-direction:row-reverse;-webkit-flex-direction:row-reverse;
+  align-items:center;-webkit-align-items:center;padding-right:max(6px,env(safe-area-inset-right));touch-action:none}
+.vpad.solo .vpad-side{display:none}
+.vjoy{position:relative;width:150px;height:150px;margin:0 auto;border-radius:50%;touch-action:none;
   background:radial-gradient(circle,rgba(255,255,255,.16) 0%,rgba(255,255,255,.06) 62%,rgba(255,255,255,.12) 100%);
   border:3px solid rgba(255,200,61,.55);box-shadow:inset 0 0 22px rgba(0,0,0,.45),0 6px 16px rgba(0,0,0,.35)}
+.vjoy.act{border-color:#ffc83d}
 .vjoy-knob{position:absolute;left:50%;top:50%;width:66px;height:66px;margin:-33px 0 0 -33px;border-radius:50%;pointer-events:none;
   background:radial-gradient(circle at 35% 30%,#fff3c4 0%,#ffc83d 35%,#ff7a3d 100%);border:3px solid #fff;box-shadow:0 6px 14px rgba(0,0,0,.5)}
 .vjoy-knob.on{background:radial-gradient(circle at 35% 30%,#d9fff0 0%,#3ddc97 40%,#13915a 100%)}
 .vjoy-arrows .ja{position:absolute;color:rgba(255,232,160,.75);font-size:16px;line-height:16px;pointer-events:none;font-family:Arial,sans-serif}
 .ja.u{top:7px;left:50%;margin-left:-6px}.ja.d{bottom:7px;left:50%;margin-left:-6px}
 .ja.l{left:8px;top:50%;margin-top:-8px}.ja.r{right:8px;top:50%;margin-top:-8px}
-.vkeys{display:inline-block;padding:8px 10px 10px;border-radius:16px;background:#1b1440;border:2px solid rgba(255,255,255,.15);box-shadow:inset 0 2px 8px rgba(0,0,0,.6);touch-action:none}
+.vkeys{display:inline-block;padding:8px 10px 10px;border-radius:16px;background:#1b1440;border:2px solid rgba(255,255,255,.15);box-shadow:inset 0 2px 8px rgba(0,0,0,.6)}
 .vk-row{display:flex;display:-webkit-flex;justify-content:center;-webkit-justify-content:center}
-.vkey{width:66px;height:62px;margin:4px;border-radius:10px;cursor:pointer;
-  font:bold 26px/52px Arial,Tahoma,sans-serif;color:#2a2a3a;text-align:center;
+.vkey{width:62px;height:60px;margin:4px;border-radius:10px;
+  font:bold 26px/50px Arial,Tahoma,sans-serif;color:#2a2a3a;text-align:center;
   background:linear-gradient(#ffffff,#d8d4e8);border:1px solid #9a94b8;border-bottom:7px solid #8f88ad;box-shadow:0 3px 6px rgba(0,0,0,.45)}
-.vkey.on{background:linear-gradient(#ffe08a,#ffc83d);border-bottom-width:2px;margin-top:9px;height:57px;color:#2a1060}
-.vkeys.flat .vkey{width:86px}
-.vpad-switch{margin-top:8px}
-.vsw{border:2px solid rgba(255,200,61,.6);background:transparent;color:#ffe08a;border-radius:14px;padding:3px 12px;margin:0 3px;font-family:inherit;font-size:14px;cursor:pointer}
+.vkey.on{background:linear-gradient(#ffe08a,#ffc83d);border-bottom-width:2px;margin-top:9px;height:55px;color:#2a1060}
+.vkeys.flat .vkey{width:80px}
+.vpad-switch{margin-top:8px;white-space:nowrap}
+.vsw{border:2px solid rgba(255,200,61,.6);background:transparent;color:#ffe08a;border-radius:14px;padding:3px 10px;margin:0 2px;font-family:inherit;font-size:13px;cursor:pointer}
 .vsw.sel{background:#ffc83d;color:#2a1060;font-weight:bold}
-.vbtn{width:86px;height:86px;margin:6px;border-radius:50%;cursor:pointer;touch-action:none;-webkit-user-select:none;user-select:none;
+.vbtn{width:88px;height:88px;margin:6px;border-radius:50%;cursor:pointer;touch-action:none;-webkit-user-select:none;user-select:none;padding:0;
   font:bold 19px Tahoma,Arial,sans-serif;color:#fff;border:3px solid #fff;
   background:radial-gradient(circle at 35% 30%,#b8a6ff,#6a4ad8 70%,#3d2690);box-shadow:0 7px 0 rgba(0,0,0,.35),0 8px 16px rgba(0,0,0,.35)}
 .vbtn:active{-webkit-transform:translateY(4px);transform:translateY(4px);box-shadow:0 3px 0 rgba(0,0,0,.35)}
+.vbtn.b1{margin-top:44px}            /* القفز: أسفل أقصى اليمين تحت الإبهام */
+.vbtn.b2{margin-bottom:44px}         /* الإطلاق: أعلى منه قليلاً */
 .vbtn.gold{color:#2a1060;background:radial-gradient(circle at 35% 30%,#fff3c4,#ffc83d 60%,#d99a00)}
 .vbtn.red{background:radial-gradient(circle at 35% 30%,#ffb3a8,#ff5a46 60%,#b83a2b)}
 @media (max-width:480px){
-  .vjoy{width:130px;height:130px}.vjoy-knob{width:58px;height:58px;margin:-29px 0 0 -29px}
-  .vkey{width:56px;height:54px;line-height:44px}.vkey.on{height:49px}
-  .vbtn{width:74px;height:74px;font-size:17px}
+  .vjoy{width:132px;height:132px}.vjoy-knob{width:58px;height:58px;margin:-29px 0 0 -29px}
+  .vkey{width:52px;height:52px;line-height:42px;font-size:22px;margin:3px}.vkey.on{height:47px;margin-top:8px}
+  .vkeys.flat .vkey{width:64px}
+  .vbtn{width:78px;height:78px;font-size:17px;margin:4px}
+}
+/* وضع تكبير الشاشة والجوال بالعرض: التحكم على جانبي اللعبة فوقها، مثل ألعاب المحاكاة */
+.playwrap.fs .stage{position:relative}
+.playwrap.fs .vpad{position:absolute;left:0;right:0;bottom:0;margin:0;pointer-events:none;z-index:5}
+.playwrap.fs .vpad-main,.playwrap.fs .vpad-side{pointer-events:auto;opacity:.85}
+.playwrap.fs .vpad-main{-webkit-box-align:end;align-items:flex-end;-webkit-align-items:flex-end;padding-bottom:6px}
+.playwrap.fs .vpad-side{align-items:flex-end;-webkit-align-items:flex-end;padding-bottom:6px}
+@media (max-height:520px){
+  .playwrap.fs{padding:4px 10px}
+  .playwrap.fs .playbar{margin-bottom:2px}
+  .playwrap.fs .ptitle{font-size:20px}
+  .playwrap.fs .pbtns .btn{padding:4px 12px;font-size:14px;margin:2px}
+  .playwrap.fs .hud.inflow{margin-bottom:2px}
+  .playwrap.fs .hud.inflow .hchip{font-size:14px;padding:1px 10px}
+  .playwrap.fs .vjoy{width:120px;height:120px}.playwrap.fs .vjoy-knob{width:54px;height:54px;margin:-27px 0 0 -27px}
+  .playwrap.fs .vbtn{width:72px;height:72px;font-size:16px}
+  .playwrap.fs .vbtn.b1{margin-top:30px}.playwrap.fs .vbtn.b2{margin-bottom:30px}
+  .playwrap.fs .vkey{width:48px;height:46px;line-height:36px;font-size:20px;margin:2px}.playwrap.fs .vkey.on{height:41px;margin-top:7px}
+  .playwrap.fs .vpad-switch{display:none}
 }
 
-/* ترتيب لوحة المفاتيح */
-.kg-board{direction:ltr;max-width:820px;margin:8px auto 0;padding:10px 8px;border-radius:16px;background:#1b1440;border:2px solid rgba(255,200,61,.4);box-shadow:inset 0 2px 10px rgba(0,0,0,.5)}
-.kg-row{display:flex;display:-webkit-flex;margin:3px 0}
-.kg-slot{flex:1 1 0;-webkit-flex:1 1 0;min-width:0;max-width:62px;height:54px;margin:2px;padding:0;border-radius:9px;position:relative;cursor:pointer;
-  font:bold 24px Tahoma,Arial,sans-serif;color:#2a1060;background:rgba(255,255,255,.06);border:2px dashed rgba(255,200,61,.7);touch-action:manipulation}
+/* ترتيب لوحة المفاتيح: الأحجام تتبع حجم الشاشة لتظهر اللوحة والحروف معاً دون تمرير */
+.kg-board{direction:ltr;max-width:820px;margin:4px auto 0;padding:clamp(4px,1.2vh,10px) clamp(3px,1vw,8px);border-radius:14px;background:#1b1440;border:2px solid rgba(255,200,61,.4);box-shadow:inset 0 2px 10px rgba(0,0,0,.5);box-sizing:border-box}
+.kg-row{display:flex;display:-webkit-flex;margin:2px 0}
+.kg-slot{flex:1 1 0;-webkit-flex:1 1 0;min-width:0;max-width:62px;height:clamp(34px,7.2vh,54px);margin:clamp(1px,.4vw,3px);padding:0;border-radius:8px;position:relative;cursor:pointer;
+  font:bold clamp(16px,3.6vh,26px) Tahoma,Arial,sans-serif;color:#2a1060;background:rgba(255,255,255,.06);border:2px dashed rgba(255,200,61,.7);touch-action:manipulation}
 .kg-slot.fixed{background:linear-gradient(#f4f0ff,#cfc3ff);border:1px solid #8a7bc4;border-bottom:4px solid #8a7bc4;color:#5a4a8a;cursor:default}
 .kg-slot.done{background:linear-gradient(#d6ffe6,#8dffb8);border:1px solid #1fa855;border-bottom:4px solid #1fa855;cursor:default}
 .kg-slot.sel{background:rgba(255,200,61,.3);border:3px solid #ffc83d;box-shadow:0 0 14px rgba(255,200,61,.8)}
+.kg-slot.hover{background:rgba(141,255,184,.35);border:3px solid #8dffb8;box-shadow:0 0 16px rgba(141,255,184,.9);-webkit-transform:scale(1.12);transform:scale(1.12);z-index:2}
 .kg-slot.bad{background:#c0392b;border:2px solid #ff9b8f}
-.kg-slot.home:after{content:"";position:absolute;left:35%;right:35%;bottom:6px;height:3px;border-radius:2px;background:#ffc83d}
+.kg-slot.home:after{content:"";position:absolute;left:35%;right:35%;bottom:5px;height:3px;border-radius:2px;background:#ffc83d}
 .kg-slot.home.done:after,.kg-slot.home.fixed:after{background:#2a1060}
-.kg-pool{direction:ltr;display:flex;display:-webkit-flex;flex-wrap:wrap;-webkit-flex-wrap:wrap;justify-content:center;-webkit-justify-content:center;max-width:820px;margin:6px auto}
-.kg-key{min-width:54px;height:54px;margin:4px;padding:0 6px;border-radius:10px;cursor:pointer;touch-action:manipulation;
-  font:bold 26px Tahoma,Arial,sans-serif;color:#2a1060;background:linear-gradient(#fff,#e2dcf5);border:1px solid #8a7bc4;border-bottom:5px solid #8a7bc4}
+.kg-msg{font-size:clamp(15px,2.6vh,20px);min-height:0;margin:4px 0}
+.kg-pool{direction:ltr;display:flex;display:-webkit-flex;flex-wrap:wrap;-webkit-flex-wrap:wrap;justify-content:center;-webkit-justify-content:center;max-width:820px;margin:2px auto}
+.kg-key{width:clamp(38px,9.5vw,56px);height:clamp(38px,7.5vh,56px);margin:clamp(2px,.5vw,4px);padding:0;border-radius:10px;cursor:grab;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;
+  font:bold clamp(18px,4vh,27px) Tahoma,Arial,sans-serif;color:#2a1060;background:linear-gradient(#fff,#e2dcf5);border:1px solid #8a7bc4;border-bottom:5px solid #8a7bc4}
 .kg-key.sel{background:linear-gradient(#ffe08a,#ffc83d);border-color:#d99a00;-webkit-transform:translateY(-4px);transform:translateY(-4px);box-shadow:0 0 16px rgba(255,200,61,.8)}
+.kg-key.drag{opacity:.35}
 .kg-pool.wait .kg-key{border-color:#ffc83d;box-shadow:0 0 0 2px rgba(255,200,61,.5)}
-@media (max-width:480px){ .kg-slot{height:44px;font-size:18px;margin:1px;border-radius:7px} .kg-key{min-width:44px;height:46px;font-size:22px;margin:3px} }
+@media (min-width:600px){ .kg-key{width:clamp(38px,5.6vw,56px)} }
+@media (max-height:520px){
+  .kg-board{padding:3px 6px}.kg-row{margin:1px 0}
+  .kg-slot{height:clamp(24px,7vh,40px);font-size:clamp(14px,4.6vh,22px)}
+  .kg-key{width:clamp(34px,5.4vw,50px);height:clamp(30px,9vh,44px);margin:2px 3px;font-size:clamp(16px,5.4vh,24px)}
+  .kg-msg{font-size:14px;margin:2px 0}
+  body.gplay #zoomCtl{display:none}
+}
 
 @media (max-width:700px){
   .pick,.pick.t4{width:46%}
@@ -1401,6 +1432,10 @@ function gClean(){
     if(l[0].removeEventListener) l[0].removeEventListener(l[1], l[2], false); else l[0].detachEvent("on" + l[1], l[2]);
   }
   G.timers = []; G.intervals = []; G.listeners = []; G.loopFn = null;
+  G.pad = null;
+  document.body.className = document.body.className.replace(/(^|\s)gplay(?=\s|$)/g, "");
+  if(G.autoFs && pseudoFs){ G.autoFs = false; pseudoFs = false; try{ applyFs(); }catch(e){} }
+  G.autoFs = false; G.noAutoFs = false;
 }
 function gLoop(fn){
   G.loopFn = fn; G.lastT = 0;
@@ -1416,7 +1451,8 @@ function gLoop(fn){
 function setHud(html, inflow){
   var h = $("hud");
   if(G.hudLast !== html){ h.innerHTML = html; G.hudLast = html; }
-  h.className = "hud" + (inflow ? " inflow" : "");
+  var nc = "hud" + (inflow ? " inflow" : "");
+  if(h.className !== nc){ h.className = nc; if(isFs()) fitCanvas(); }   /* تغيّر مكان شريط النقاط: نعيد حساب حجم اللوحة */
 }
 
 /* ---------- لوحة (Canvas) ---------- */
@@ -1440,7 +1476,16 @@ function fitCanvas(){
   var c = G.canvas; if(!c) return;
   var st = $("stage"), aw = st.clientWidth, w, h;
   if(isFs()){
-    var ah = st.clientHeight, s = Math.min(aw / CW, ah / CH);
+    var ah = st.clientHeight, gs = $("gstage"), hd = $("hud"), k, ch;
+    /* نطرح شريط النقاط وأي عناصر تحت اللوحة حتى تظهر اللعبة كاملة دون قص */
+    if(/inflow/.test(hd.className)) ah -= hd.offsetHeight + 8;
+    for(k = 0; k < gs.childNodes.length; k++){
+      ch = gs.childNodes[k];
+      if(ch === c || ch.nodeType !== 1) continue;
+      if(window.getComputedStyle && getComputedStyle(ch).position === "absolute") continue;
+      ah -= ch.offsetHeight + 12;
+    }
+    var s = Math.min(aw / CW, ah / CH);
     if(!(s > 0)) s = 1;
     w = CW * s; h = CH * s;
   }else{
@@ -1474,6 +1519,8 @@ function enterFs(){
   applyFs();
 }
 function exitFs(){
+  if(G.autoFs) G.noAutoFs = true;   /* خرج اللاعب بنفسه: لا نكبّر تلقائياً مرة أخرى في هذه اللعبة */
+  G.autoFs = false;
   pseudoFs = false;
   if(fsElem()){
     var d = document, f = d.exitFullscreen || d.webkitExitFullscreen || d.mozCancelFullScreen || d.msExitFullscreen;
@@ -1486,7 +1533,7 @@ function exitFs(){
   for(i = 0; i < evs.length; i++){
     if(document.addEventListener) document.addEventListener(evs[i], applyFs, false);
   }
-  if(window.addEventListener) window.addEventListener("resize", fitCanvas, false);
+  if(window.addEventListener){ window.addEventListener("resize", fitCanvas, false); window.addEventListener("resize", function(){ padLandCheck(); }, false); }
 })();
 
 /* ---------- نتائج الألعاب ---------- */
@@ -1525,6 +1572,8 @@ function showPanel(p){
   $("gStageBox").className = "gpanel stagebox" + (p === "stage" ? "" : " hidden");
   $("gResult").className = "gpanel card" + (p === "result" ? "" : " hidden");
   $("btnGEnd").className = "btn small red" + (p === "stage" ? "" : " hidden");
+  var bc = document.body.className.replace(/(^|\s)gplay(?=\s|$)/g, "");
+  document.body.className = bc + (p === "stage" ? " gplay" : "");
   fitCanvas();
 }
 
@@ -2680,22 +2729,23 @@ var KG_LAYOUTS = {
 };
 var KG_HOME = {en:{F:1, J:1}, ar:{"ب":1, "ت":1}};
 /* صورة الحرف التي تتبع الإصبع أثناء السحب */
+var KG_LIFT = 58;   /* الحرف المسحوب يظهر فوق الإصبع بهذه المسافة حتى لا يغطيه الإصبع */
 function kgGhost(ch, x, y){
   var g = document.getElementById("kgGhost");
   if(ch === null){ if(g) g.style.display = "none"; return; }
   if(!g){
     g = document.createElement("div"); g.id = "kgGhost";
-    g.style.cssText = "position:fixed;z-index:10001;pointer-events:none;min-width:50px;height:50px;line-height:50px;padding:0 8px;text-align:center;border-radius:10px;background:#ffc83d;color:#2a1060;font:bold 28px Tahoma,Arial,sans-serif;box-shadow:0 6px 16px rgba(0,0,0,.5);opacity:.92";
+    g.style.cssText = "position:fixed;z-index:10001;pointer-events:none;width:56px;height:56px;line-height:56px;margin:-28px 0 0 -28px;text-align:center;border-radius:12px;background:#ffc83d;color:#2a1060;font:bold 30px Tahoma,Arial,sans-serif;box-shadow:0 8px 18px rgba(0,0,0,.55);border:3px solid #fff";
     document.body.appendChild(g);
   }
   setText(g, ch); g.style.display = "block";
-  g.style.left = (x - 25) + "px"; g.style.top = (y - 70) + "px";
+  g.style.left = x + "px"; g.style.top = (y - KG_LIFT) + "px";
 }
 function kgStart(o){
   var lang = o.lang, L = o.lv, rows = KG_LAYOUTS[lang];
   var play = L === 1 ? {1:1} : L === 2 ? {0:1, 1:1} : {0:1, 1:1, 2:1};
   var root = $("gstage"), board = el("div", "kg-board"), pool = el("div", "kg-pool");
-  var msg = el("div", "memmsg", "اضغط مكاناً فارغاً في اللوحة ثم اختر حرفه من الأسفل، أو اختر الحرف أولاً ثم مكانه");
+  var msg = el("div", "memmsg kg-msg", "اضغط مكاناً فارغاً ثم اختر حرفه، أو اسحب الحرف إلى مكانه");
   var slots = [], keys = [], selKey = null, selSlot = null, placed = 0, total = 0, wrong = 0, score = 0, streak = 0, t0 = now(), done = false, r, c;
   root.appendChild(board); root.appendChild(msg); root.appendChild(pool);
 
@@ -2742,6 +2792,29 @@ function kgStart(o){
     }
     hud();
   }
+  /* المكان الأقرب للحرف المسحوب: الذي تحت الحرف الظاهر، ثم تحت الإصبع، ثم الأقرب إليه */
+  function slotNear(gx, gy, fx, fy){
+    var best = null, bd = 1e9, i, s, r, d, pts = [[gx, gy], [fx, fy]], p;
+    for(p = 0; p < 2; p++){
+      for(i = 0; i < slots.length; i++){
+        s = slots[i]; if(s.done) continue; r = s.b.getBoundingClientRect();
+        if(pts[p][0] >= r.left && pts[p][0] <= r.right && pts[p][1] >= r.top && pts[p][1] <= r.bottom) return s;
+      }
+    }
+    for(i = 0; i < slots.length; i++){
+      s = slots[i]; if(s.done) continue; r = s.b.getBoundingClientRect();
+      d = Math.max(Math.abs(gx - (r.left + r.width / 2)) - r.width / 2, Math.abs(gy - (r.top + r.height / 2)) - r.height / 2);
+      if(d < bd){ bd = d; best = s; }
+    }
+    return bd <= 22 ? best : null;
+  }
+  var hovered = null;
+  function hoverSlot(s){
+    if(hovered === s) return;
+    if(hovered && !hovered.done) hovered.b.className = slotCls(hovered);
+    hovered = s;
+    if(s) s.b.className = slotCls(s, "hover");
+  }
   function finishAll(){
     done = true;
     var secs = Math.round((now() - t0) / 1000), fb = Math.max(0, total * 4 - secs) * 2;
@@ -2773,42 +2846,64 @@ function kgStart(o){
   keys = shuffle(keys);
   for(c = 0; c < keys.length; c++){
     (function(k){
-      k.b = mkbtn(k.ch, "kg-key", function(){ select(k); });
-      k.b.setAttribute("draggable", "true");
-      gListen(k.b, "dragstart", function(e){
+      k.b = mkbtn(k.ch, "kg-key", function(){ if(k.skip){ k.skip = false; return; } select(k); });
+      function startDrag(){
         if(selSlot) setSelSlot(null);
         if(selKey && selKey !== k) selKey.b.className = "kg-key";
-        selKey = k; k.b.className = "kg-key sel";
-        try{ e.dataTransfer.setData("text/plain", k.ch); }catch(err){}
-      });
-      /* السحب بالإصبع: اسحب الحرف وأفلته فوق مكانه (اللمس العادي يختاره كالماوس) */
-      gListen(k.b, "touchstart", function(e){
-        if(done || k.used) return;
-        var t = e.changedTouches[0]; k.ts = {x:t.clientX, y:t.clientY, drag:false};
-      });
-      gListen(k.b, "touchmove", function(e){
-        if(!k.ts) return;
-        if(e.cancelable && e.preventDefault) e.preventDefault();
-        var t = e.changedTouches[0];
-        if(!k.ts.drag && Math.abs(t.clientX - k.ts.x) + Math.abs(t.clientY - k.ts.y) > 8){
-          k.ts.drag = true;
-          if(selSlot) setSelSlot(null);
-          if(selKey && selKey !== k) selKey.b.className = "kg-key";
-          selKey = k; k.b.className = "kg-key sel";
-        }
-        if(k.ts.drag) kgGhost(k.ch, t.clientX, t.clientY);
-      });
-      function kgEnd(e){
-        if(!k.ts) return;
-        var dragged = k.ts.drag; k.ts = null; kgGhost(null);
-        if(!dragged) return;
-        if(e.cancelable && e.preventDefault) e.preventDefault();
-        var t = e.changedTouches[0], under = document.elementFromPoint ? document.elementFromPoint(t.clientX, t.clientY) : null;
-        while(under && !under._kgSlot) under = under.parentNode;
-        if(under) place(k, under._kgSlot);
+        selKey = k; k.b.className = "kg-key sel drag";
       }
-      gListen(k.b, "touchend", kgEnd);
-      gListen(k.b, "touchcancel", function(){ k.ts = null; kgGhost(null); });
+      function dragTo(x, y){ kgGhost(k.ch, x, y); hoverSlot(slotNear(x, y - KG_LIFT, x, y)); }
+      function drop(x, y){
+        var s = slotNear(x, y - KG_LIFT, x, y);
+        kgGhost(null); hoverSlot(null);
+        if(k.b.className.indexOf("drag") >= 0) k.b.className = "kg-key sel";
+        if(s) place(k, s);
+      }
+      if(window.PointerEvent){
+        /* سحب موحّد للماوس واللمس: يتبع الحرف الإصبع، ويُفلت في المكان الظاهر تحت الحرف المسحوب */
+        gListen(k.b, "pointerdown", function(e){
+          if(done || k.used || (e.button && e.button !== 0)) return;
+          k.pd = {x:e.clientX, y:e.clientY, id:e.pointerId, drag:false};
+          try{ k.b.setPointerCapture(e.pointerId); }catch(err){}
+        });
+        gListen(k.b, "pointermove", function(e){
+          if(!k.pd || e.pointerId !== k.pd.id) return;
+          if(!k.pd.drag && Math.abs(e.clientX - k.pd.x) + Math.abs(e.clientY - k.pd.y) > 10){ k.pd.drag = true; startDrag(); }
+          if(k.pd.drag){ if(e.preventDefault) e.preventDefault(); dragTo(e.clientX, e.clientY); }
+        });
+        gListen(k.b, "pointerup", function(e){
+          if(!k.pd || e.pointerId !== k.pd.id) return;
+          var dr = k.pd.drag; k.pd = null;
+          if(dr){ k.skip = true; gTimeout(function(){ k.skip = false; }, 400); drop(e.clientX, e.clientY); }
+        });
+        gListen(k.b, "pointercancel", function(){ k.pd = null; kgGhost(null); hoverSlot(null); });
+        gListen(k.b, "dragstart", function(e){ if(e.preventDefault) e.preventDefault(); });
+      }else{
+        k.b.setAttribute("draggable", "true");
+        gListen(k.b, "dragstart", function(e){
+          startDrag();
+          try{ e.dataTransfer.setData("text/plain", k.ch); }catch(err){}
+        });
+        gListen(k.b, "touchstart", function(e){
+          if(done || k.used) return;
+          var t = e.changedTouches[0]; k.ts = {x:t.clientX, y:t.clientY, drag:false};
+        });
+        gListen(k.b, "touchmove", function(e){
+          if(!k.ts) return;
+          if(e.cancelable && e.preventDefault) e.preventDefault();
+          var t = e.changedTouches[0];
+          if(!k.ts.drag && Math.abs(t.clientX - k.ts.x) + Math.abs(t.clientY - k.ts.y) > 10){ k.ts.drag = true; startDrag(); }
+          if(k.ts.drag) dragTo(t.clientX, t.clientY);
+        });
+        gListen(k.b, "touchend", function(e){
+          if(!k.ts) return;
+          var dragged = k.ts.drag; k.ts = null;
+          if(!dragged){ kgGhost(null); return; }
+          if(e.cancelable && e.preventDefault) e.preventDefault();
+          var t = e.changedTouches[0]; drop(t.clientX, t.clientY);
+        });
+        gListen(k.b, "touchcancel", function(){ k.ts = null; kgGhost(null); hoverSlot(null); });
+      }
       pool.appendChild(k.b);
     })(keys[c]);
   }
@@ -2985,11 +3080,19 @@ function holdBtn(label, cls, onDown, onUp){
    cfg.onPress(dx, dy): تُستدعى عند بدء اتجاه جديد، وتتكرر كل cfg.repeat ملّي ثانية ما دام مضغوطاً
    cfg.buttons: [{label, cls, down, up}] أزرار إضافية كبيرة (قفز، إطلاق...) */
 function padPref(){ var v = load("qz2_pad", "joy"); return v === "keys" ? "keys" : "joy"; }
+function isCoarse(){ try{ return !!(window.matchMedia && matchMedia("(pointer:coarse)").matches) || ("ontouchstart" in window); }catch(e){ return false; } }
+/* الجوال بالعرض: تكبير اللعبة تلقائياً ووضع التحكم على جانبيها مثل ألعاب المحاكاة */
+function padLandCheck(){
+  if(!G.pad || !G.active) return;
+  var land = isCoarse() && window.innerWidth > window.innerHeight && window.innerHeight < 620;
+  if(land && !isFs() && !G.noAutoFs){ G.autoFs = true; pseudoFs = true; applyFs(); }
+  else if(!land && G.autoFs && pseudoFs){ G.autoFs = false; pseudoFs = false; applyFs(); }
+}
 function makePad(cfg){
   var mode = cfg.mode || "4", kind = padPref();
-  var wrap = el("div", "vpad"), main = el("div", "vpad-main"), side = el("div", "vpad-side");
-  var cur = {x:0, y:0}, rptT = null;
-  wrap.appendChild(main); wrap.appendChild(side);
+  var wrap = el("div", "vpad"), main = el("div", "vpad-main"), side = el("div", "vpad-side"), holder = el("div", "vpad-holder");
+  var cur = {x:0, y:0}, rptT = null, zoneFn = null;
+  main.appendChild(holder); wrap.appendChild(main); wrap.appendChild(side);
 
   function emit(dx, dy){
     if(dx === cur.x && dy === cur.y) return;
@@ -3005,30 +3108,40 @@ function makePad(cfg){
       }
     }
   }
+  function isCtl(t){ while(t && t !== main){ if(t.tagName === "BUTTON") return true; t = t.parentNode; } return false; }
 
-  /* ---- عصا التحكم: دائرة ملونة تُسحب في الاتجاه المطلوب ---- */
+  /* ---- عصا التحكم: دائرة ملونة تُسحب، وتنتقل إلى مكان الإبهام في أي نقطة من النصف الأيسر ---- */
   function buildJoy(){
-    var base = el("div", "vjoy"), knob = el("div", "vjoy-knob"), R = 52, DEAD = 16, tid = null, ox = 0, oy = 0, mouse = false;
+    var base = el("div", "vjoy"), knob = el("div", "vjoy-knob"), R = 52, DEAD = 14, tid = null, ox = 0, oy = 0, bx = 0, by = 0, mouse = false;
     var ar = el("div", "vjoy-arrows");
     ar.innerHTML = (mode === "x" ? "" : '<span class="ja u">▲</span>') + (mode === "4" ? '<span class="ja d">▼</span>' : "") + '<span class="ja l">◀</span><span class="ja r">▶</span>';
     base.appendChild(ar); base.appendChild(knob);
-    function centre(){ var r = base.getBoundingClientRect(); ox = r.left + r.width / 2; oy = r.top + r.height / 2; R = r.width / 2 - knob.offsetWidth / 2 + 6; }
-    function setKnob(x, y, anim){
-      knob.style.transition = anim ? "transform .15s" : "none";
+    function tf(elm, x, y, anim){
+      elm.style.transition = anim ? "transform .15s" : "none"; elm.style.webkitTransition = elm.style.transition;
       var t = "translate(" + Math.round(x) + "px," + Math.round(y) + "px)";
-      knob.style.transform = t; knob.style.webkitTransform = t;
+      elm.style.transform = t; elm.style.webkitTransform = t;
+    }
+    function begin(cx, cy){
+      tf(base, 0, 0, false);
+      var r = base.getBoundingClientRect(), mx = r.left + r.width / 2, my = r.top + r.height / 2;
+      R = r.width / 2 - knob.offsetWidth / 2 + 8;
+      var d = Math.sqrt((cx - mx) * (cx - mx) + (cy - my) * (cy - my));
+      if(d <= r.width / 2){ ox = mx; oy = my; bx = 0; by = 0; }        /* لمس داخل الدائرة: عصا ثابتة */
+      else { ox = cx; oy = cy; bx = cx - mx; by = cy - my; }           /* خارجها: تنتقل العصا إلى مكان الإبهام */
+      tf(base, bx, by, false); base.className = "vjoy act";
+      moveTo(cx, cy);
     }
     function moveTo(cx, cy){
-      var x = cx - ox, y = cy - oy, d = Math.sqrt(x * x + y * y);
-      if(d > R){ x = x / d * R; y = y / d * R; }
-      if(mode === "x") y = y * 0.25;
-      setKnob(x, y, false);
+      var x = cx - ox, y = cy - oy, d = Math.sqrt(x * x + y * y), kx = x, ky = y;
+      if(d > R){ kx = x / d * R; ky = y / d * R; }
+      if(mode === "x") ky = ky * 0.25;
+      tf(knob, kx, ky, false);
       var dx = 0, dy = 0;
       if(d >= DEAD){
         if(mode === "4"){
           if(Math.abs(x) > Math.abs(y)) dx = x > 0 ? 1 : -1; else dy = y > 0 ? 1 : -1;
         }else{
-          var nx = (cx - ox) / d, ny = (cy - oy) / d;
+          var nx = x / d, ny = y / d;
           if(Math.abs(nx) > 0.38) dx = nx > 0 ? 1 : -1;
           if(mode === "xu" && ny < -0.55) dy = -1;
         }
@@ -3036,26 +3149,25 @@ function makePad(cfg){
       knob.className = "vjoy-knob" + (dx || dy ? " on" : "");
       emit(dx, dy);
     }
-    function release(){ tid = null; mouse = false; setKnob(0, 0, true); knob.className = "vjoy-knob"; emit(0, 0); }
+    function release(){ tid = null; mouse = false; tf(knob, 0, 0, true); tf(base, 0, 0, true); knob.className = "vjoy-knob"; base.className = "vjoy"; emit(0, 0); }
     function findT(list){ for(var i = 0; list && i < list.length; i++) if(list[i].identifier === tid) return list[i]; return null; }
-    gListen(base, "touchstart", function(e){
-      if(e.cancelable && e.preventDefault) e.preventDefault();
-      if(tid !== null) return;
-      var t = e.changedTouches[0]; tid = t.identifier; centre(); moveTo(t.clientX, t.clientY);
-    });
-    gListen(base, "touchmove", function(e){
-      if(e.cancelable && e.preventDefault) e.preventDefault();
-      var t = findT(e.changedTouches); if(t) moveTo(t.clientX, t.clientY);
-    });
-    function tEnd(e){ if(findT(e.changedTouches)) release(); }
-    gListen(base, "touchend", tEnd); gListen(base, "touchcancel", tEnd);
-    gListen(base, "mousedown", function(e){ if(e.preventDefault) e.preventDefault(); mouse = true; centre(); moveTo(e.clientX, e.clientY); });
-    gListen(document, "mousemove", function(e){ if(mouse) moveTo(e.clientX, e.clientY); });
-    gListen(document, "mouseup", function(){ if(mouse) release(); });
+    zoneFn = {
+      ts:function(e){
+        if(isCtl(e.target)) return;
+        if(e.cancelable && e.preventDefault) e.preventDefault();
+        if(tid !== null) return;
+        var t = e.changedTouches[0]; tid = t.identifier; begin(t.clientX, t.clientY);
+      },
+      tm:function(e){ if(tid === null) return; if(e.cancelable && e.preventDefault) e.preventDefault(); var t = findT(e.changedTouches); if(t) moveTo(t.clientX, t.clientY); },
+      te:function(e){ if(tid !== null && findT(e.changedTouches)) release(); },
+      md:function(e){ if(isCtl(e.target)) return; if(e.preventDefault) e.preventDefault(); mouse = true; begin(e.clientX, e.clientY); },
+      mm:function(e){ if(mouse) moveTo(e.clientX, e.clientY); },
+      mu:function(){ if(mouse) release(); }
+    };
     return base;
   }
 
-  /* ---- أسهم بشكل مفاتيح لوحة المفاتيح (يمكن تمرير الإصبع من سهم لآخر) ---- */
+  /* ---- أسهم بشكل مفاتيح لوحة المفاتيح (يمكن تمرير الإبهام من سهم لآخر) ---- */
   function buildKeys(){
     var box = el("div", "vkeys" + (mode === "x" ? " flat" : "")), keys = {}, held = {}, order = [], mouseKey = null;
     var defs = mode === "4" ? [["u","▲"],["l","◀"],["d","▼"],["r","▶"]] : mode === "xu" ? [["u","▲"],["l","◀"],["r","▶"]] : [["l","◀"],["r","▶"]];
@@ -3077,50 +3189,74 @@ function makePad(cfg){
       }
       emit(dx, dy);
     }
+    /* أقرب سهم لنقطة اللمس (حتى لو لمس الإبهام الفراغ بين الأسهم) */
     function keyAt(x, y){
-      var u = document.elementFromPoint ? document.elementFromPoint(x, y) : null;
-      while(u && u !== box && !u._vk) u = u.parentNode;
-      return u && u._vk ? u._vk : null;
+      var best = null, bd = 1e9, n, r, cx, cy, d;
+      for(n in keys){
+        r = keys[n].getBoundingClientRect(); cx = r.left + r.width / 2; cy = r.top + r.height / 2;
+        d = Math.max(Math.abs(x - cx) - r.width / 2, Math.abs(y - cy) - r.height / 2);
+        if(d < bd){ bd = d; best = n; }
+      }
+      return bd <= 40 ? best : null;
     }
     function fromTouches(e){
+      if(e.type === "touchstart" && isCtl(e.target)) return;
       if(e.cancelable && e.preventDefault) e.preventDefault();
       var now_ = {}, ts = e.touches || [], j, n;
-      for(j = 0; j < ts.length; j++){ n = keyAt(ts[j].clientX, ts[j].clientY); if(n) now_[n] = true; }
+      for(j = 0; j < ts.length; j++){
+        if(!main.contains || main.contains(ts[j].target)){ n = keyAt(ts[j].clientX, ts[j].clientY); if(n) now_[n] = true; }
+      }
       for(n in now_) if(!held[n]){ order.push(n); }
       held = now_;
       if(mouseKey) held[mouseKey] = true;
       recompute();
     }
-    gListen(box, "touchstart", fromTouches); gListen(box, "touchmove", fromTouches);
-    gListen(box, "touchend", fromTouches); gListen(box, "touchcancel", fromTouches);
-    gListen(box, "mousedown", function(e){
-      if(e.preventDefault) e.preventDefault();
-      var n = keyAt(e.clientX, e.clientY); if(!n) return;
-      mouseKey = n; held[n] = true; order.push(n); recompute();
-    });
-    gListen(document, "mouseup", function(){ if(mouseKey){ held[mouseKey] = false; mouseKey = null; recompute(); } });
+    zoneFn = {
+      ts:fromTouches, tm:fromTouches, te:fromTouches,
+      md:function(e){
+        if(isCtl(e.target)) return;
+        if(e.preventDefault) e.preventDefault();
+        var n = keyAt(e.clientX, e.clientY); if(!n) return;
+        mouseKey = n; held[n] = true; order.push(n); recompute();
+      },
+      mm:function(){},
+      mu:function(){ if(mouseKey){ held[mouseKey] = false; mouseKey = null; recompute(); } }
+    };
     return box;
   }
 
+  /* منطقة الإبهام الأيسر كلها تستقبل اللمس */
+  /* لمس أزرار التبديل (عصا/أسهم) يُترك للزر نفسه */
+  gListen(main, "touchstart", function(e){ if(zoneFn && !isCtl(e.target)) zoneFn.ts(e); });
+  gListen(main, "touchmove", function(e){ if(zoneFn && !isCtl(e.target)) zoneFn.tm(e); });
+  gListen(main, "touchend", function(e){ if(zoneFn && !isCtl(e.target)) zoneFn.te(e); });
+  gListen(main, "touchcancel", function(e){ if(zoneFn && !isCtl(e.target)) zoneFn.te(e); });
+  gListen(main, "mousedown", function(e){ if(zoneFn) zoneFn.md(e); });
+  gListen(document, "mousemove", function(e){ if(zoneFn) zoneFn.mm(e); });
+  gListen(document, "mouseup", function(e){ if(zoneFn) zoneFn.mu(e); });
+
   function buildMain(){
-    clearKids(main); emit(0, 0);
-    main.appendChild(kind === "keys" ? buildKeys() : buildJoy());
+    clearKids(holder); emit(0, 0);
+    holder.appendChild(kind === "keys" ? buildKeys() : buildJoy());
     var sw = el("div", "vpad-switch");
     sw.appendChild(mkbtn("عصا تحكم", "vsw" + (kind === "joy" ? " sel" : ""), function(){ kind = "joy"; save("qz2_pad", kind); buildMain(); }));
     sw.appendChild(mkbtn("أسهم", "vsw" + (kind === "keys" ? " sel" : ""), function(){ kind = "keys"; save("qz2_pad", kind); buildMain(); }));
-    main.appendChild(sw);
+    holder.appendChild(sw);
   }
   buildMain();
 
+  /* أزرار الإبهام الأيمن: الأول (القفز) في أقصى اليمين وأسفل، والثاني أعلى منه قليلاً مثل يد الألعاب */
   var bs = cfg.buttons || [], b;
   for(b = 0; b < bs.length; b++){
-    (function(d){
-      var btn = holdBtn(d.label, "vbtn" + (d.cls ? " " + d.cls : ""), d.down || function(){}, d.up || function(){});
+    (function(d, n){
+      var btn = holdBtn(d.label, "vbtn" + (d.cls ? " " + d.cls : "") + (n === 0 ? " b1" : " b2"), d.down || function(){}, d.up || function(){});
       side.appendChild(btn);
-    })(bs[b]);
+    })(bs[b], b);
   }
   if(!bs.length) wrap.className = "vpad solo";
   $("gstage").appendChild(wrap);
+  G.pad = wrap;
+  padLandCheck();
   return wrap;
 }
 function bigText(ctx, txt, x, y, size, col, stroke){

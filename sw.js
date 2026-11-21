@@ -1,6 +1,6 @@
 /* عامل الخدمة: يحفظ ملفات التطبيق في الجهاز ليعمل بلا إنترنت بعد أول فتح.
    عند تعديل أي ملف في التطبيق غيّر رقم الإصدار هنا ليحصل الطلاب على النسخة الجديدة. */
-var VERSION = "qz-app-v3";
+var VERSION = "qz-app-v4";
 var FILES = [
   "./",
   "./index.html",
@@ -21,13 +21,27 @@ self.addEventListener("activate", function(e){
   }).then(function(){ return self.clients.claim(); }));
 });
 
-/* من الجهاز أولاً (يعمل بلا إنترنت)، ثم تحديث النسخة المحفوظة في الخلفية إن توفر الاتصال */
+/* صفحة التطبيق (index.html): من الإنترنت أولاً حتى تظهر التحديثات فوراً، ومن الجهاز إذا لم يتوفر الاتصال.
+   بقية الملفات (الأيقونات...): من الجهاز أولاً مع تحديثها في الخلفية. */
 self.addEventListener("fetch", function(e){
   if(e.request.method !== "GET") return;
+  var url = new URL(e.request.url), same = url.origin === self.location.origin;
+  var isPage = e.request.mode === "navigate" || /\/$|\.html$/.test(url.pathname);
+  if(isPage){
+    e.respondWith(caches.open(VERSION).then(function(c){
+      return fetch(e.request, {cache:"no-store"}).then(function(res){
+        if(res && res.ok && same) c.put(e.request, res.clone());
+        return res;
+      }).catch(function(){
+        return c.match(e.request, {ignoreSearch:true}).then(function(hit){ return hit || c.match("./index.html"); });
+      });
+    }));
+    return;
+  }
   e.respondWith(caches.open(VERSION).then(function(c){
     return c.match(e.request, {ignoreSearch:true}).then(function(hit){
       var net = fetch(e.request).then(function(res){
-        if(res && res.ok && new URL(e.request.url).origin === self.location.origin) c.put(e.request, res.clone());
+        if(res && res.ok && same) c.put(e.request, res.clone());
         return res;
       }).catch(function(){ return hit; });
       return hit || net;
