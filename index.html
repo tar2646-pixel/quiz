@@ -232,6 +232,66 @@ label{display:block;margin:10px 0 4px;font-size:18px}
 .tnext{background:rgba(255,200,61,.45);border-radius:4px}
 #tinput{max-width:760px;display:block;margin:6px auto;direction:rtl}
 
+/* لوحة تحكم اللمس: عصا التحكم والأسهم */
+.vpad{direction:ltr;display:flex;display:-webkit-flex;align-items:center;-webkit-align-items:center;justify-content:space-between;-webkit-justify-content:space-between;
+  max-width:760px;margin:12px auto 4px;padding:0 10px;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.vpad.solo{justify-content:center;-webkit-justify-content:center}
+/* في وضع تكبير الشاشة: عصا التحكم والأزرار تطفو فوق اللعبة (يسار ويمين) */
+.playwrap.fs .stage{position:relative}
+.playwrap.fs .vpad{position:absolute;left:0;right:0;bottom:8px;max-width:none;margin:0;padding:0 14px;pointer-events:none;opacity:.82;z-index:5}
+.playwrap.fs .vpad.solo{justify-content:flex-start;-webkit-justify-content:flex-start}
+.playwrap.fs .vpad-main,.playwrap.fs .vpad-side{pointer-events:auto}
+.vpad-main{text-align:center}
+.vpad-side{display:flex;display:-webkit-flex;align-items:center;-webkit-align-items:center;flex-wrap:wrap;-webkit-flex-wrap:wrap;justify-content:flex-end;-webkit-justify-content:flex-end}
+.vjoy{position:relative;width:150px;height:150px;margin:0 auto;border-radius:50%;touch-action:none;cursor:pointer;
+  background:radial-gradient(circle,rgba(255,255,255,.16) 0%,rgba(255,255,255,.06) 62%,rgba(255,255,255,.12) 100%);
+  border:3px solid rgba(255,200,61,.55);box-shadow:inset 0 0 22px rgba(0,0,0,.45),0 6px 16px rgba(0,0,0,.35)}
+.vjoy-knob{position:absolute;left:50%;top:50%;width:66px;height:66px;margin:-33px 0 0 -33px;border-radius:50%;pointer-events:none;
+  background:radial-gradient(circle at 35% 30%,#fff3c4 0%,#ffc83d 35%,#ff7a3d 100%);border:3px solid #fff;box-shadow:0 6px 14px rgba(0,0,0,.5)}
+.vjoy-knob.on{background:radial-gradient(circle at 35% 30%,#d9fff0 0%,#3ddc97 40%,#13915a 100%)}
+.vjoy-arrows .ja{position:absolute;color:rgba(255,232,160,.75);font-size:16px;line-height:16px;pointer-events:none;font-family:Arial,sans-serif}
+.ja.u{top:7px;left:50%;margin-left:-6px}.ja.d{bottom:7px;left:50%;margin-left:-6px}
+.ja.l{left:8px;top:50%;margin-top:-8px}.ja.r{right:8px;top:50%;margin-top:-8px}
+.vkeys{display:inline-block;padding:8px 10px 10px;border-radius:16px;background:#1b1440;border:2px solid rgba(255,255,255,.15);box-shadow:inset 0 2px 8px rgba(0,0,0,.6);touch-action:none}
+.vk-row{display:flex;display:-webkit-flex;justify-content:center;-webkit-justify-content:center}
+.vkey{width:66px;height:62px;margin:4px;border-radius:10px;cursor:pointer;
+  font:bold 26px/52px Arial,Tahoma,sans-serif;color:#2a2a3a;text-align:center;
+  background:linear-gradient(#ffffff,#d8d4e8);border:1px solid #9a94b8;border-bottom:7px solid #8f88ad;box-shadow:0 3px 6px rgba(0,0,0,.45)}
+.vkey.on{background:linear-gradient(#ffe08a,#ffc83d);border-bottom-width:2px;margin-top:9px;height:57px;color:#2a1060}
+.vkeys.flat .vkey{width:86px}
+.vpad-switch{margin-top:8px}
+.vsw{border:2px solid rgba(255,200,61,.6);background:transparent;color:#ffe08a;border-radius:14px;padding:3px 12px;margin:0 3px;font-family:inherit;font-size:14px;cursor:pointer}
+.vsw.sel{background:#ffc83d;color:#2a1060;font-weight:bold}
+.vbtn{width:86px;height:86px;margin:6px;border-radius:50%;cursor:pointer;touch-action:none;-webkit-user-select:none;user-select:none;
+  font:bold 19px Tahoma,Arial,sans-serif;color:#fff;border:3px solid #fff;
+  background:radial-gradient(circle at 35% 30%,#b8a6ff,#6a4ad8 70%,#3d2690);box-shadow:0 7px 0 rgba(0,0,0,.35),0 8px 16px rgba(0,0,0,.35)}
+.vbtn:active{-webkit-transform:translateY(4px);transform:translateY(4px);box-shadow:0 3px 0 rgba(0,0,0,.35)}
+.vbtn.gold{color:#2a1060;background:radial-gradient(circle at 35% 30%,#fff3c4,#ffc83d 60%,#d99a00)}
+.vbtn.red{background:radial-gradient(circle at 35% 30%,#ffb3a8,#ff5a46 60%,#b83a2b)}
+@media (max-width:480px){
+  .vjoy{width:130px;height:130px}.vjoy-knob{width:58px;height:58px;margin:-29px 0 0 -29px}
+  .vkey{width:56px;height:54px;line-height:44px}.vkey.on{height:49px}
+  .vbtn{width:74px;height:74px;font-size:17px}
+}
+
+/* ترتيب لوحة المفاتيح */
+.kg-board{direction:ltr;max-width:820px;margin:8px auto 0;padding:10px 8px;border-radius:16px;background:#1b1440;border:2px solid rgba(255,200,61,.4);box-shadow:inset 0 2px 10px rgba(0,0,0,.5)}
+.kg-row{display:flex;display:-webkit-flex;margin:3px 0}
+.kg-slot{flex:1 1 0;-webkit-flex:1 1 0;min-width:0;max-width:62px;height:54px;margin:2px;padding:0;border-radius:9px;position:relative;cursor:pointer;
+  font:bold 24px Tahoma,Arial,sans-serif;color:#2a1060;background:rgba(255,255,255,.06);border:2px dashed rgba(255,200,61,.7);touch-action:manipulation}
+.kg-slot.fixed{background:linear-gradient(#f4f0ff,#cfc3ff);border:1px solid #8a7bc4;border-bottom:4px solid #8a7bc4;color:#5a4a8a;cursor:default}
+.kg-slot.done{background:linear-gradient(#d6ffe6,#8dffb8);border:1px solid #1fa855;border-bottom:4px solid #1fa855;cursor:default}
+.kg-slot.sel{background:rgba(255,200,61,.3);border:3px solid #ffc83d;box-shadow:0 0 14px rgba(255,200,61,.8)}
+.kg-slot.bad{background:#c0392b;border:2px solid #ff9b8f}
+.kg-slot.home:after{content:"";position:absolute;left:35%;right:35%;bottom:6px;height:3px;border-radius:2px;background:#ffc83d}
+.kg-slot.home.done:after,.kg-slot.home.fixed:after{background:#2a1060}
+.kg-pool{direction:ltr;display:flex;display:-webkit-flex;flex-wrap:wrap;-webkit-flex-wrap:wrap;justify-content:center;-webkit-justify-content:center;max-width:820px;margin:6px auto}
+.kg-key{min-width:54px;height:54px;margin:4px;padding:0 6px;border-radius:10px;cursor:pointer;touch-action:manipulation;
+  font:bold 26px Tahoma,Arial,sans-serif;color:#2a1060;background:linear-gradient(#fff,#e2dcf5);border:1px solid #8a7bc4;border-bottom:5px solid #8a7bc4}
+.kg-key.sel{background:linear-gradient(#ffe08a,#ffc83d);border-color:#d99a00;-webkit-transform:translateY(-4px);transform:translateY(-4px);box-shadow:0 0 16px rgba(255,200,61,.8)}
+.kg-pool.wait .kg-key{border-color:#ffc83d;box-shadow:0 0 0 2px rgba(255,200,61,.5)}
+@media (max-width:480px){ .kg-slot{height:44px;font-size:18px;margin:1px;border-radius:7px} .kg-key{min-width:44px;height:46px;font-size:22px;margin:3px} }
+
 @media (max-width:700px){
   .pick,.pick.t4{width:46%}
   h1{font-size:34px}
@@ -1912,14 +1972,8 @@ function snakeStart(o){
   });
   gListen(G.canvas, "touchend", function(){ sw = null; });
   gListen(G.canvas, "touchcancel", function(){ sw = null; });
-  var noop = function(){};
-  var tc = el("div", "tc-row");
-  tc.appendChild(holdBtn("◀", "tc-btn", function(){ pushDir(-1, 0); }, noop));
-  tc.appendChild(holdBtn("▲", "tc-btn", function(){ pushDir(0, -1); }, noop));
-  tc.appendChild(holdBtn("▼", "tc-btn", function(){ pushDir(0, 1); }, noop));
-  tc.appendChild(holdBtn("▶", "tc-btn", function(){ pushDir(1, 0); }, noop));
-  tc.appendChild(holdBtn("إيقاف مؤقت", "tc-btn gold", function(){ if(!dead) paused = !paused; }, noop));
-  $("gstage").appendChild(tc);
+  makePad({mode:"4", onPress:function(dx, dy){ pushDir(dx, dy); },
+           buttons:[{label:"إيقاف", cls:"gold", down:function(){ if(!dead) paused = !paused; }}]});
   gLoop(function(dt){
     if(!dead && !paused){
       acc += dt * 1000;
@@ -2197,10 +2251,7 @@ function dodgeStart(o){
   gListen(G.canvas, "touchmove", function(e){ if(e.preventDefault) e.preventDefault(); tX = tPos(e); });
   gListen(G.canvas, "touchend", function(){ tX = null; });
   gListen(G.canvas, "touchcancel", function(){ tX = null; });
-  var tcd = el("div", "tc-row");
-  tcd.appendChild(holdBtn("◀ يسار", "tc-btn", function(){ keys.l = true; }, function(){ keys.l = false; }));
-  tcd.appendChild(holdBtn("يمين ▶", "tc-btn", function(){ keys.r = true; }, function(){ keys.r = false; }));
-  $("gstage").appendChild(tcd);
+  makePad({mode:"x", onDir:function(dx){ keys.l = dx < 0; keys.r = dx > 0; }});
   function drawChar(){
     if(inv > 0 && Math.floor(inv * 10) % 2 === 0) return;
     ctx.fillStyle = "#4c93dd"; ctx.fillRect(px - 14, py - 28, 28, 22);
@@ -2528,7 +2579,7 @@ var GAMES = [
   options:[{key:"lv", label:"اختر الخصم", choices:[["الحاسوب - سهل","easy"],["الحاسوب - متوسط","mid"],["الحاسوب - صعب","hard"],["لاعبان على الجهاز","two"]]}]},
  {id:"snake", name:"الثعبان الجائع", tag:"مهارة", icon:ICO.snake, sd:"كُل وكبّر ولا تصطدم", start:snakeStart,
   desc:"حرّك الثعبان ليأكل الدوائر الحمراء ويطول دون أن يصطدم.",
-  instr:["حرّك الثعبان بأسهم لوحة المفاتيح (أو بالأحرف W A S D)، وعلى الأجهزة اللمسية اسحب إصبعك على اللوحة في الاتجاه المطلوب أو استخدم الأزرار تحت اللعبة.",
+  instr:["حرّك الثعبان بأسهم لوحة المفاتيح (أو بالأحرف W A S D)، وعلى الأجهزة اللمسية اسحب عصا التحكم (الدائرة الملونة) تحت اللعبة في الاتجاه المطلوب، أو اختر «أسهم» لتظهر أسهم مثل لوحة المفاتيح، ويمكنك أيضاً السحب على اللوحة نفسها.",
          "كُل الدوائر الحمراء ليطول الثعبان وتزيد نقاطك: 10 نقاط × رقم السرعة (1 بطيء، 2 متوسط، 3 سريع).",
          "لا تصطدم بحدود مساحة اللعبة ولا بجسم الثعبان نفسه، وإلا تنتهي اللعبة.",
          "كلما أكلت أكثر زادت سرعة الثعبان قليلاً.",
@@ -2577,7 +2628,7 @@ var GAMES = [
  {id:"dodge", name:"تفادي المربعات", tag:"مهارة", icon:ICO.dodge, sd:"تفادَ المربعات والتقط الفواكه", start:dodgeStart,
   desc:"مربعات وفواكه تتساقط عليك: تفادَ المربعات والتقط الفواكه لنقاط إضافية.",
   instr:["أنت الشخصية في أسفل المساحة، وتتساقط عليك مربعات وفواكه من الأعلى.",
-         "حرّك الشخصية يميناً ويساراً فقط بالسهمين ← → في لوحة المفاتيح (أو بمفتاحي A وD)، وعلى الأجهزة اللمسية اسحب إصبعك على اللوحة فتتبعه الشخصية، أو اضغط مطولاً على زرّي يسار ويمين.",
+         "حرّك الشخصية يميناً ويساراً فقط بالسهمين ← → في لوحة المفاتيح (أو بمفتاحي A وD)، وعلى الأجهزة اللمسية اسحب إصبعك على اللوحة فتتبعه الشخصية، أو حرّك عصا التحكم (الدائرة الملونة) تحت اللعبة يميناً ويساراً، أو اختر «أسهم» لتظهر أسهم مثل لوحة المفاتيح.",
          "لديك 5 نجوم: كل مرة يصيبك فيها مربع تفقد نجمة، وعند فقدان النجوم الخمس تنتهي اللعبة.",
          "التقط الفواكه لنقاط إضافية: تفاحة 15، برتقالة 20، عنب 30، بطيخ 40 (تتضاعف حسب المستوى). الفواكه أبطأ من المربعات، والفاكهة الأغلى أندر.",
          "تكسب نقاطاً أيضاً عن كل مربع تتفاداه وعن كل ثانية تصمد فيها، وتزداد السرعة مع مرور الوقت."],
@@ -2644,23 +2695,39 @@ function kgStart(o){
   var lang = o.lang, L = o.lv, rows = KG_LAYOUTS[lang];
   var play = L === 1 ? {1:1} : L === 2 ? {0:1, 1:1} : {0:1, 1:1, 2:1};
   var root = $("gstage"), board = el("div", "kg-board"), pool = el("div", "kg-pool");
-  var msg = el("div", "memmsg", "اختر مفتاحاً من الأسفل ثم اضغط مكانه في اللوحة، أو اسحبه إليه");
-  var slots = [], keys = [], selKey = null, placed = 0, total = 0, wrong = 0, score = 0, streak = 0, t0 = now(), done = false, r, c;
+  var msg = el("div", "memmsg", "اضغط مكاناً فارغاً في اللوحة ثم اختر حرفه من الأسفل، أو اختر الحرف أولاً ثم مكانه");
+  var slots = [], keys = [], selKey = null, selSlot = null, placed = 0, total = 0, wrong = 0, score = 0, streak = 0, t0 = now(), done = false, r, c;
   root.appendChild(board); root.appendChild(msg); root.appendChild(pool);
 
   function hud(){
     setHud(chip("النقاط", score) + chip("المرتّبة", placed + "/" + total) + chip("الأخطاء", wrong) + chip("الوقت", fmt((now() - t0) / 1000)), true);
   }
+  function slotCls(s, extra){ return "kg-slot" + (extra ? " " + extra : (s === selSlot ? " sel" : "")) + (s.home ? " home" : ""); }
+  function setSelSlot(s){
+    var old = selSlot; selSlot = s;
+    if(old && !old.done) old.b.className = slotCls(old);
+    if(s) s.b.className = slotCls(s);
+    pool.className = "kg-pool" + (s ? " wait" : "");
+  }
   function select(k){
     if(done || k.used) return;
+    if(selSlot){ place(k, selSlot); return; }   /* المكان مختار أولاً: الحرف يذهب إليه مباشرة */
     if(selKey) selKey.b.className = "kg-key";
     selKey = (selKey === k) ? null : k;
     if(selKey) selKey.b.className = "kg-key sel";
   }
+  function tapSlot(s){
+    if(done || s.done) return;
+    if(selKey){ place(selKey, s); return; }     /* الحرف مختار أولاً: ضعه في هذا المكان */
+    setSelSlot(selSlot === s ? null : s);
+    if(selSlot){ setText(msg, "الآن اختر الحرف المناسب لهذا المكان"); msg.style.color = "#ffe08a"; }
+  }
   function place(k, s){
     if(done || !k || k.used || s.done) return;
     if(k.ch === s.ch){
-      s.done = true; s.b.className = "kg-slot done" + (s.home ? " home" : ""); setText(s.b, s.ch);
+      s.done = true; if(selSlot === s) setSelSlot(null);
+      s.b.className = slotCls(s, "done"); setText(s.b, s.ch);
+      if(k.b.className !== "kg-key") k.b.className = "kg-key";
       k.used = true; k.b.style.visibility = "hidden"; selKey = null;
       placed++; streak++;
       var pts = 10 + Math.min(streak - 1, 5) * 2;
@@ -2669,9 +2736,9 @@ function kgStart(o){
       if(placed === total) finishAll();
     }else{
       wrong++; streak = 0; score = Math.max(0, score - 5);
-      s.b.className = "kg-slot bad" + (s.home ? " home" : ""); beep(200, 160, "square");
+      s.b.className = slotCls(s, "bad"); beep(200, 160, "square");
       setText(msg, "ليس مكانه، حاول مرة أخرى (-5)"); msg.style.color = "#ff9b8f";
-      gTimeout(function(){ if(!s.done) s.b.className = "kg-slot" + (s.home ? " home" : ""); }, 450);
+      gTimeout(function(){ if(!s.done) s.b.className = slotCls(s); }, 450);
     }
     hud();
   }
@@ -2683,11 +2750,11 @@ function kgStart(o){
     gTimeout(function(){ endGame(score, "الوقت: " + fmt(secs) + " | الأخطاء: " + wrong + " | مكافأة السرعة: +" + fb); }, 1200);
   }
   for(r = 0; r < rows.length; r++){
-    var row = el("div", "kg-row"); row.style.paddingLeft = (r * 26) + "px";
+    var row = el("div", "kg-row"); row.style.paddingLeft = (r * 3) + "%";
     for(c = 0; c < rows[r].length; c++){
       (function(ch, active){
         var s = {ch:ch, done:!active, home:!!KG_HOME[lang][ch], b:null};
-        s.b = mkbtn(active ? "" : ch, "kg-slot" + (active ? "" : " fixed") + (s.home ? " home" : ""), function(){ if(selKey) place(selKey, s); });
+        s.b = mkbtn(active ? "" : ch, "kg-slot" + (active ? "" : " fixed") + (s.home ? " home" : ""), function(){ if(active) tapSlot(s); });
         if(active){
           total++;
           s.b._kgSlot = s;
@@ -2709,6 +2776,7 @@ function kgStart(o){
       k.b = mkbtn(k.ch, "kg-key", function(){ select(k); });
       k.b.setAttribute("draggable", "true");
       gListen(k.b, "dragstart", function(e){
+        if(selSlot) setSelSlot(null);
         if(selKey && selKey !== k) selKey.b.className = "kg-key";
         selKey = k; k.b.className = "kg-key sel";
         try{ e.dataTransfer.setData("text/plain", k.ch); }catch(err){}
@@ -2724,6 +2792,7 @@ function kgStart(o){
         var t = e.changedTouches[0];
         if(!k.ts.drag && Math.abs(t.clientX - k.ts.x) + Math.abs(t.clientY - k.ts.y) > 8){
           k.ts.drag = true;
+          if(selSlot) setSelSlot(null);
           if(selKey && selKey !== k) selKey.b.className = "kg-key";
           selKey = k; k.b.className = "kg-key sel";
         }
@@ -2852,7 +2921,7 @@ GAMES.push(
  {id:"kbd", name:"ترتيب لوحة المفاتيح", tag:"تعليمية", icon:ICO.kbd, sd:"ضع كل حرف في مكانه", start:kgStart,
   desc:"حروف لوحة المفاتيح مبعثرة: أعِد كل حرف إلى مكانه الصحيح على اللوحة.",
   instr:["تظهر لوحة مفاتيح فارغة، وتحتها الحروف مبعثرة.",
-         "اضغط على حرف لتختاره ثم اضغط مكانه في اللوحة، أو اسحبه بالماوس أو بإصبعك وأفلته في مكانه.",
+         "اضغط على مكان فارغ في اللوحة ثم اختر الحرف المناسب له من الأسفل، أو العكس: اختر الحرف أولاً ثم اضغط مكانه. ويمكنك أيضاً سحب الحرف بإصبعك وإفلاته في مكانه.",
          "الخطّان الصغيران تحت مفتاحي ب وت (أو F وJ) هما مكان السبابتين، استعن بهما لتبدأ.",
          "كل حرف في مكانه الصحيح +10 مع مكافأة التتابع، وكل خطأ يخصم 5 نقاط.",
          "عند إكمال اللوحة تحصل على مكافأة إن أنهيت بسرعة."],
@@ -2908,6 +2977,151 @@ function holdBtn(label, cls, onDown, onUp){
   gListen(b, "mousedown", d); gListen(b, "touchstart", d);
   gListen(b, "mouseup", u); gListen(b, "mouseleave", u); gListen(b, "touchend", u); gListen(b, "touchcancel", u);
   return b;
+}
+
+/* ---------- لوحة تحكم اللمس: عصا تحكم أو أسهم مثل لوحة المفاتيح ----------
+   cfg.mode: "4" أربعة اتجاهات (اتجاه واحد في كل مرة) | "x" يسار ويمين فقط | "xu" يسار ويمين وأعلى
+   cfg.onDir(dx, dy): تُستدعى كلما تغيّر الاتجاه المضغوط (0,0 عند الإفلات)
+   cfg.onPress(dx, dy): تُستدعى عند بدء اتجاه جديد، وتتكرر كل cfg.repeat ملّي ثانية ما دام مضغوطاً
+   cfg.buttons: [{label, cls, down, up}] أزرار إضافية كبيرة (قفز، إطلاق...) */
+function padPref(){ var v = load("qz2_pad", "joy"); return v === "keys" ? "keys" : "joy"; }
+function makePad(cfg){
+  var mode = cfg.mode || "4", kind = padPref();
+  var wrap = el("div", "vpad"), main = el("div", "vpad-main"), side = el("div", "vpad-side");
+  var cur = {x:0, y:0}, rptT = null;
+  wrap.appendChild(main); wrap.appendChild(side);
+
+  function emit(dx, dy){
+    if(dx === cur.x && dy === cur.y) return;
+    cur = {x:dx, y:dy};
+    if(cfg.onDir) cfg.onDir(dx, dy);
+    if(rptT){ clearTimeout(rptT); rptT = null; }
+    if((dx || dy) && cfg.onPress){
+      cfg.onPress(dx, dy);
+      if(cfg.repeat){
+        var again = function(){ if(!G.active || (cur.x !== dx || cur.y !== dy)) return; cfg.onPress(dx, dy); rptT = setTimeout(again, cfg.repeat); };
+        rptT = setTimeout(again, cfg.repeat + 160);
+        G.timers.push(rptT);
+      }
+    }
+  }
+
+  /* ---- عصا التحكم: دائرة ملونة تُسحب في الاتجاه المطلوب ---- */
+  function buildJoy(){
+    var base = el("div", "vjoy"), knob = el("div", "vjoy-knob"), R = 52, DEAD = 16, tid = null, ox = 0, oy = 0, mouse = false;
+    var ar = el("div", "vjoy-arrows");
+    ar.innerHTML = (mode === "x" ? "" : '<span class="ja u">▲</span>') + (mode === "4" ? '<span class="ja d">▼</span>' : "") + '<span class="ja l">◀</span><span class="ja r">▶</span>';
+    base.appendChild(ar); base.appendChild(knob);
+    function centre(){ var r = base.getBoundingClientRect(); ox = r.left + r.width / 2; oy = r.top + r.height / 2; R = r.width / 2 - knob.offsetWidth / 2 + 6; }
+    function setKnob(x, y, anim){
+      knob.style.transition = anim ? "transform .15s" : "none";
+      var t = "translate(" + Math.round(x) + "px," + Math.round(y) + "px)";
+      knob.style.transform = t; knob.style.webkitTransform = t;
+    }
+    function moveTo(cx, cy){
+      var x = cx - ox, y = cy - oy, d = Math.sqrt(x * x + y * y);
+      if(d > R){ x = x / d * R; y = y / d * R; }
+      if(mode === "x") y = y * 0.25;
+      setKnob(x, y, false);
+      var dx = 0, dy = 0;
+      if(d >= DEAD){
+        if(mode === "4"){
+          if(Math.abs(x) > Math.abs(y)) dx = x > 0 ? 1 : -1; else dy = y > 0 ? 1 : -1;
+        }else{
+          var nx = (cx - ox) / d, ny = (cy - oy) / d;
+          if(Math.abs(nx) > 0.38) dx = nx > 0 ? 1 : -1;
+          if(mode === "xu" && ny < -0.55) dy = -1;
+        }
+      }
+      knob.className = "vjoy-knob" + (dx || dy ? " on" : "");
+      emit(dx, dy);
+    }
+    function release(){ tid = null; mouse = false; setKnob(0, 0, true); knob.className = "vjoy-knob"; emit(0, 0); }
+    function findT(list){ for(var i = 0; list && i < list.length; i++) if(list[i].identifier === tid) return list[i]; return null; }
+    gListen(base, "touchstart", function(e){
+      if(e.cancelable && e.preventDefault) e.preventDefault();
+      if(tid !== null) return;
+      var t = e.changedTouches[0]; tid = t.identifier; centre(); moveTo(t.clientX, t.clientY);
+    });
+    gListen(base, "touchmove", function(e){
+      if(e.cancelable && e.preventDefault) e.preventDefault();
+      var t = findT(e.changedTouches); if(t) moveTo(t.clientX, t.clientY);
+    });
+    function tEnd(e){ if(findT(e.changedTouches)) release(); }
+    gListen(base, "touchend", tEnd); gListen(base, "touchcancel", tEnd);
+    gListen(base, "mousedown", function(e){ if(e.preventDefault) e.preventDefault(); mouse = true; centre(); moveTo(e.clientX, e.clientY); });
+    gListen(document, "mousemove", function(e){ if(mouse) moveTo(e.clientX, e.clientY); });
+    gListen(document, "mouseup", function(){ if(mouse) release(); });
+    return base;
+  }
+
+  /* ---- أسهم بشكل مفاتيح لوحة المفاتيح (يمكن تمرير الإصبع من سهم لآخر) ---- */
+  function buildKeys(){
+    var box = el("div", "vkeys" + (mode === "x" ? " flat" : "")), keys = {}, held = {}, order = [], mouseKey = null;
+    var defs = mode === "4" ? [["u","▲"],["l","◀"],["d","▼"],["r","▶"]] : mode === "xu" ? [["u","▲"],["l","◀"],["r","▶"]] : [["l","◀"],["r","▶"]];
+    var top = el("div", "vk-row"), bot = el("div", "vk-row"), i;
+    for(i = 0; i < defs.length; i++){
+      var k = el("div", "vkey", defs[i][1]); k._vk = defs[i][0]; keys[defs[i][0]] = k;
+      (defs[i][0] === "u" ? top : bot).appendChild(k);
+    }
+    if(top.firstChild) box.appendChild(top);
+    box.appendChild(bot);
+    function recompute(){
+      var dx = (held.r ? 1 : 0) - (held.l ? 1 : 0), dy = (held.d ? 1 : 0) - (held.u ? 1 : 0), n;
+      for(n in keys) keys[n].className = "vkey" + (held[n] ? " on" : "");
+      if(mode === "4"){
+        dx = 0; dy = 0;
+        for(var j = order.length - 1; j >= 0; j--){
+          if(held[order[j]]){ n = order[j]; dx = n === "r" ? 1 : n === "l" ? -1 : 0; dy = n === "d" ? 1 : n === "u" ? -1 : 0; break; }
+        }
+      }
+      emit(dx, dy);
+    }
+    function keyAt(x, y){
+      var u = document.elementFromPoint ? document.elementFromPoint(x, y) : null;
+      while(u && u !== box && !u._vk) u = u.parentNode;
+      return u && u._vk ? u._vk : null;
+    }
+    function fromTouches(e){
+      if(e.cancelable && e.preventDefault) e.preventDefault();
+      var now_ = {}, ts = e.touches || [], j, n;
+      for(j = 0; j < ts.length; j++){ n = keyAt(ts[j].clientX, ts[j].clientY); if(n) now_[n] = true; }
+      for(n in now_) if(!held[n]){ order.push(n); }
+      held = now_;
+      if(mouseKey) held[mouseKey] = true;
+      recompute();
+    }
+    gListen(box, "touchstart", fromTouches); gListen(box, "touchmove", fromTouches);
+    gListen(box, "touchend", fromTouches); gListen(box, "touchcancel", fromTouches);
+    gListen(box, "mousedown", function(e){
+      if(e.preventDefault) e.preventDefault();
+      var n = keyAt(e.clientX, e.clientY); if(!n) return;
+      mouseKey = n; held[n] = true; order.push(n); recompute();
+    });
+    gListen(document, "mouseup", function(){ if(mouseKey){ held[mouseKey] = false; mouseKey = null; recompute(); } });
+    return box;
+  }
+
+  function buildMain(){
+    clearKids(main); emit(0, 0);
+    main.appendChild(kind === "keys" ? buildKeys() : buildJoy());
+    var sw = el("div", "vpad-switch");
+    sw.appendChild(mkbtn("عصا تحكم", "vsw" + (kind === "joy" ? " sel" : ""), function(){ kind = "joy"; save("qz2_pad", kind); buildMain(); }));
+    sw.appendChild(mkbtn("أسهم", "vsw" + (kind === "keys" ? " sel" : ""), function(){ kind = "keys"; save("qz2_pad", kind); buildMain(); }));
+    main.appendChild(sw);
+  }
+  buildMain();
+
+  var bs = cfg.buttons || [], b;
+  for(b = 0; b < bs.length; b++){
+    (function(d){
+      var btn = holdBtn(d.label, "vbtn" + (d.cls ? " " + d.cls : ""), d.down || function(){}, d.up || function(){});
+      side.appendChild(btn);
+    })(bs[b]);
+  }
+  if(!bs.length) wrap.className = "vpad solo";
+  $("gstage").appendChild(wrap);
+  return wrap;
 }
 function bigText(ctx, txt, x, y, size, col, stroke){
   ctx.font = "bold " + size + "px Tahoma"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
@@ -3315,7 +3529,7 @@ function daveStart(o){
   var ctx = buf.getContext("2d");
   var state = "intro", stateT = 0, level = 0, score = 0, lives = LIVES0, gems = 0, kills = 0;
   var hasTrophy = false, hasGun = false, hasJet = false, fuel = 0, jetOn = false;
-  var tiles = [], enemies = [], bullets = [], particles = [], pops = [];
+  var tiles = [], enemies = [], bullets = [], particles = [], pops = [], fallen = [], stompChain = 0, stomps = 0;
   var frame = 0, shake = 0, flash = 0, flashC = "", inv = 0, lvFrames = 0, combo = 0, comboT = 0, nextLife = 5000, bonusTxt = [];
   var spawnPt = {x:0, y:0}, cam = {x:0}, acc = 0, ended = false;
   var P = {x:0, y:0, vx:0, vy:0, w:12, h:14, dir:1, grounded:false, frame:0, walk:0, cool:0};
@@ -3334,18 +3548,17 @@ function daveStart(o){
   gListen(document, "keydown", function(e){ setKey(e, true); });
   gListen(document, "keyup", function(e){ setKey(e, false); });
 
-  /* أزرار اللمس */
-  var tc = el("div", "tc-row");
-  tc.appendChild(holdBtn("◀ يسار", "tc-btn", function(){ keys.l = true; }, function(){ keys.l = false; }));
-  tc.appendChild(holdBtn("يمين ▶", "tc-btn", function(){ keys.r = true; }, function(){ keys.r = false; }));
-  tc.appendChild(holdBtn("قفز ▲", "tc-btn gold", function(){ keys.u = true; }, function(){ keys.u = false; }));
-  tc.appendChild(holdBtn("إطلاق", "tc-btn red", function(){ keys.f = true; }, function(){ keys.f = false; }));
-  $("gstage").appendChild(tc);
+  /* تحكم اللمس: عصا التحكم (أو الأسهم) للحركة، ودفعها للأعلى يقفز، مع زرّي قفز وإطلاق */
+  var padU = false, btnU = false;
+  makePad({mode:"xu", onDir:function(dx, dy){ keys.l = dx < 0; keys.r = dx > 0; padU = dy < 0; keys.u = padU || btnU; },
+           buttons:[{label:"قفز", cls:"gold", down:function(){ btnU = true; keys.u = true; }, up:function(){ btnU = false; keys.u = padU; }},
+                    {label:"إطلاق", cls:"red", down:function(){ keys.f = true; }, up:function(){ keys.f = false; }}]});
 
   var snd = {
     jump:function(){ beep(330, 70); }, gem:function(){ beep(880, 60); setTimeout(function(){ beep(1175, 80); }, 60); },
     trophy:function(){ beep(523, 100); setTimeout(function(){ beep(659, 100); }, 110); setTimeout(function(){ beep(784, 100); }, 220); setTimeout(function(){ beep(1047, 220); }, 330); },
     shoot:function(){ beep(900, 40, "square"); }, hit:function(){ beep(160, 160, "square"); }, die:function(){ beep(300, 120, "sawtooth"); setTimeout(function(){ beep(150, 300, "sawtooth"); }, 120); },
+    stomp:function(){ beep(520, 50, "square"); setTimeout(function(){ beep(260, 90, "square"); }, 50); },
     item:function(){ beep(600, 80); setTimeout(function(){ beep(900, 120); }, 90); }, life:function(){ beep(784, 90); setTimeout(function(){ beep(988, 90); }, 100); setTimeout(function(){ beep(1319, 160); }, 200); }
   };
 
@@ -3408,7 +3621,7 @@ function daveStart(o){
   /* ---- المراحل ---- */
   function loadLevel(n){
     var map = DAVE_MAPS[n], r, c, t;
-    tiles = []; enemies = []; bullets = []; particles = []; pops = [];
+    tiles = []; enemies = []; bullets = []; particles = []; pops = []; fallen = []; stompChain = 0;
     hasTrophy = false; hasGun = false; hasJet = false; fuel = 0; jetOn = false; cam.x = 0; lvFrames = 0; inv = 0;
     for(r = 0; r < ROWS; r++){
       tiles[r] = [];
@@ -3449,11 +3662,13 @@ function daveStart(o){
       if(solid(tileAt(P.x + P.w - 1, P.y + dy))){ P.x = Math.floor((P.x + P.w - 1) / TILE) * TILE - P.w; P.vx = 0; }
       if(solid(tileAt(P.x, P.y + dy))){ P.x = (Math.floor(P.x / TILE) + 1) * TILE; P.vx = 0; }
     }
+    P.pb = P.y + P.h;   /* أسفل البطل قبل الحركة: لمعرفة هل نزل على رأس العدو من الأعلى */
     P.y += P.vy; if(P.y < HUD_H) P.y = HUD_H;
     P.grounded = false;
     var dx;
     if(P.vy > 0){ for(dx = 1; dx < P.w - 1; dx += 5) if(solid(tileAt(P.x + dx, P.y + P.h))){ P.y = Math.floor((P.y + P.h - HUD_H) / TILE) * TILE + HUD_H - P.h; P.vy = 0; P.grounded = true; break; } }
     else if(P.vy < 0){ for(dx = 1; dx < P.w - 1; dx += 5) if(solid(tileAt(P.x + dx, P.y))){ P.y = (Math.floor((P.y - HUD_H) / TILE) + 1) * TILE + HUD_H; P.vy = 0; break; } }
+    if(P.grounded) stompChain = 0;
     pickups(); hazards();
     if(P.y > H + 20) kill();
     var tgt = P.x - W / 2 + P.w / 2; cam.x += (tgt - cam.x) * 0.12;
@@ -3487,8 +3702,41 @@ function daveStart(o){
   function hazards(){
     var dx, dy;
     for(dx = 2; dx < P.w - 2; dx += 4) for(dy = 2; dy < P.h - 2; dy += 4) if(hazard(tileAt(P.x + dx, P.y + dy))){ kill(); return; }
-    if(inv > 0) return;
-    for(var i = 0; i < enemies.length; i++) if(hitBox(P, enemies[i])){ kill(); return; }
+    for(var i = enemies.length - 1; i >= 0; i--){
+      var e = enemies[i];
+      if(!hitBox(P, e)) continue;
+      /* القفز على رأس العدو: البطل نازل وكان أسفله فوق رأس العدو */
+      if(P.vy > 0 && P.pb <= e.y + 6){ stomp(i); continue; }
+      if(inv <= 0){ kill(); return; }
+    }
+  }
+  function stomp(i){
+    var e = enemies.splice(i, 1)[0];
+    e.t = 0; e.vy = -1.5; fallen.push(e);
+    stompChain++; stomps++; kills++;
+    var pts = Math.round(200 * MULT * stompChain);
+    addScore(pts, e.x + 7, e.y - 6, "+" + pts + (stompChain > 1 ? " ×" + stompChain : ""));
+    P.y = e.y - P.h; P.vy = keys.u ? JUMP * 0.95 : JUMP * 0.6; P.grounded = false;
+    snd.stomp(); shake = 5; burst(e.x + 7, e.y + 2, "#ffe08a", 10, 3);
+  }
+  function updateFallen(){
+    for(var i = fallen.length - 1; i >= 0; i--){
+      var e = fallen[i]; e.t++;
+      if(e.t > 10){ e.vy += GRAV * 0.8; e.y += e.vy; }   /* ينضغط لحظة ثم يسقط للأسفل ويختفي */
+      if(e.y > H + 20 || e.t > 110) fallen.splice(i, 1);
+    }
+  }
+  function drawFallen(){
+    for(var i = 0; i < fallen.length; i++){
+      var e = fallen[i], cx = e.x - cam.x + 7, cy = e.y + e.h;
+      ctx.save(); ctx.globalAlpha = Math.max(0, 1 - e.t / 80);
+      ctx.translate(cx, cy);
+      if(e.t <= 10) ctx.scale(1.3, 0.45); else { ctx.translate(0, -e.h / 2); ctx.scale(1, -1); ctx.translate(0, -e.h / 2); }
+      ctx.translate(-cx, -cy);
+      drawEnemy(e);
+      ctx.restore();
+    }
+    ctx.globalAlpha = 1;
   }
   function kill(){
     if(state !== "play") return;
@@ -3533,7 +3781,7 @@ function daveStart(o){
     else if(state === "play"){
       lvFrames++; if(inv > 0) inv--; if(comboT > 0) comboT--; else combo = 0;
       updatePlayer(); if(state === "play"){ updateEnemies(); updateBullets(); }
-      updateParticles();
+      updateParticles(); updateFallen();
     }
     else if(state === "dying"){ updateParticles(); updateEnemies(); stateT--; if(stateT <= 0){ respawn(); state = "play"; } }
     else if(state === "complete"){ updateParticles(); stateT--; if(stateT <= 0){ level++; if(level >= DAVE_MAPS.length){ state = "won"; stateT = 220; } else loadLevel(level); } }
@@ -3557,6 +3805,7 @@ function daveStart(o){
     }
     for(i = 0; i < bullets.length; i++){ var b = bullets[i]; R(b.x - cam.x, b.y, b.w, b.h, PAL.yellow); }
     for(i = 0; i < enemies.length; i++) drawEnemy(enemies[i]);
+    drawFallen();
     if(state === "play" || state === "intro" || state === "complete") drawHero();
     for(i = 0; i < particles.length; i++){ var p = particles[i]; ctx.globalAlpha = p.life / p.max; R(p.x - cam.x, p.y, p.s, p.s, p.c); } ctx.globalAlpha = 1;
     R(0, 0, W, HUD_H, "#1a1a3a"); R(0, HUD_H - 1, W, 1, "#3a3a6a");
@@ -3599,7 +3848,7 @@ function daveStart(o){
     if(hasJet) extra += chip("وقود الطيران", Math.round(fuel / FUEL_MAX * 100) + "%");
     setHud('<span class="hchip">الأرواح ' + hs + '</span>' + chip("النقاط", score) + chip("الجواهر", gems) + extra, true);
   }
-  function info(){ return (state === "won" ? "أنهيت المراحل الخمس! " : "وصلت إلى المرحلة " + (Math.min(level, 4) + 1) + " | ") + "الجواهر: " + gems + " | الأعداء: " + kills; }
+  function info(){ return (state === "won" ? "أنهيت المراحل الخمس! " : "وصلت إلى المرحلة " + (Math.min(level, 4) + 1) + " | ") + "الجواهر: " + gems + " | الأعداء: " + kills + " (منهم " + stomps + " بالقفز على رؤوسهم)"; }
   function finish(){ if(ended) return; ended = true; endGame(score, info()); }
   loadLevel(0);
   gLoop(function(dt){
@@ -3778,10 +4027,7 @@ function carStart(o){
     else if(c === 38 || c === 40 || c === 32) stopKey(e);
   });
   gListen(G.canvas, "mousedown", function(e){ var p = canvasPos(e); move(p.x < carX ? -1 : 1); });
-  var tc = el("div", "tc-row");
-  tc.appendChild(mkbtn("◀ يسار", "tc-btn", function(){ move(-1); }));
-  tc.appendChild(mkbtn("يمين ▶", "tc-btn", function(){ move(1); }));
-  $("gstage").appendChild(tc);
+  makePad({mode:"x", repeat:260, onPress:function(dx){ move(dx); }});
 
   function spawnRow(){
     var free = [], i, nObs = 1;
@@ -3893,7 +4139,7 @@ function carStart(o){
 GAMES.push(
  {id:"car", name:"سباق الوقود", tag:"مهارة", icon:ICO.car, sd:"قُد السيارة واجمع الوقود", start:carStart,
   desc:"سيارتك تنطلق على طريق صحراوي: غيّر المسار لتتفادى الحواجز، واجمع الوقود قبل أن ينفد.",
-  instr:["غيّر مسار السيارة بالسهمين ← → (أو A وD)، أو بالضغط يمين السيارة ويسارها، أو بزرّي يسار ويمين تحت اللعبة.",
+  instr:["غيّر مسار السيارة بالسهمين ← → (أو A وD)، أو بالضغط يمين السيارة ويسارها، أو بسحب عصا التحكم تحت اللعبة يميناً ويساراً (أو أسهم لوحة المفاتيح على الشاشة).",
          "تفادَ السيارات المتوقفة والمخاريط والحواجز: كل اصطدام يُفقدك نجمة من ثلاث.",
          "الوقود ينقص باستمرار، فالتقط علب الوقود الحمراء لتملأ الخزان. إذا نفد الوقود تنتهي اللعبة.",
          "تكسب نقاطاً عن كل متر تقطعه، وعن العملات الذهبية وعلب الوقود. السرعة تزداد كلما تقدمت.",
@@ -3901,11 +4147,12 @@ GAMES.push(
   options:[{key:"lv", label:"مستوى الصعوبة", choices:[["سهل - مساران",1],["متوسط - 3 مسارات",2],["صعب - زحام",3]]}]},
  {id:"dave", name:"مغامرة الكنز", tag:"مهارة", icon:ICO.dave, sd:"خمس مراحل من القفز والكنوز", start:daveStart,
   desc:"مغامرة قفز في خمس مراحل: اجمع الجواهر، واحصل على الكأس الذهبي ليُفتح الباب، ثم اخرج إلى المرحلة التالية.",
-  instr:["تحرك بالسهمين ← → (أو A وD)، واقفز بالسهم ↑ أو المسافة. على الأجهزة اللمسية استخدم الأزرار تحت اللعبة.",
+  instr:["تحرك بالسهمين ← → (أو A وD)، واقفز بالسهم ↑ أو المسافة. على الأجهزة اللمسية اسحب عصا التحكم (الدائرة الملونة) يميناً ويساراً للحركة وللأعلى للقفز، أو اختر «أسهم» لتظهر أسهم مثل لوحة المفاتيح، ومعها زرّا القفز والإطلاق.",
+         "اقفز على رأس الوحش لتسقطه فيختفي وتكسب 200 نقطة، وإذا قفزت على عدة وحوش متتالية دون أن تلمس الأرض تتضاعف النقاط (×2، ×3...). اضغط القفز لحظة الهبوط لترتد أعلى.",
          "اجمع الجواهر: الحمراء 100، الخضراء 150، الزرقاء 200. جمعها بسرعة متتالية يصنع سلسلة تضاعف نقاطها.",
          "خذ الكأس الذهبي فيُفتح الباب الأخضر، ثم ادخل الباب لتنهي المرحلة. كلما أنهيتها أسرع زادت مكافأة الوقت.",
          "إذا وجدت المسدس اضغط Z أو X للإطلاق على الأعداء (+300). حقيبة الطيران تجعلك تطير بالضغط على ↑ وأنت في الهواء.",
-         "تجنب النار والأشواك والوحوش. كل 5000 نقطة تمنحك حياة إضافية."],
+         "تجنب النار والأشواك، ولا تلمس الوحوش من الجانب أو من الأسفل. كل 5000 نقطة تمنحك حياة إضافية."],
   options:[{key:"lv", label:"مستوى الصعوبة", choices:[["سهل - 5 أرواح",1],["متوسط - 3 أرواح",2],["صعب - روحان",3]]}]},
  {id:"fw", name:"الألعاب النارية", tag:"مهارة", icon:ICO.fw, sd:"فجّر الصواريخ وصنع السلاسل", start:fwStart,
   desc:"صواريخ ألعاب نارية تنطلق من الأسفل: فجّرها بالماوس قبل أن تنطفئ، أو استمتع بالعرض الحر.",
