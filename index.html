@@ -478,7 +478,7 @@ body.lrlesson #mainNav,body.lrlesson #screen-learn > h1,body.lrlesson #screen-le
   <div class="ribbon">تصميم وإعداد: الأستاذ طارق الشمري</div>
   <div class="card">
     <h2>سجّل اسمك وابدأ التحدي</h2>
-    <input type="text" id="playerName" maxlength="25" placeholder="اكتب اسمك هنا">
+    <input type="text" id="playerName" maxlength="25" placeholder="اكتب اسمك هنا (اختياري)">
     <div class="err" id="nameErr">من فضلك اكتب اسمك أولاً</div>
     <div class="center">
       <button type="button" class="btn" id="btnNext">التالي: اختر التحدي</button>
@@ -555,6 +555,13 @@ body.lrlesson #mainNav,body.lrlesson #screen-learn > h1,body.lrlesson #screen-le
   <div class="card">
     <h2 id="boardResTitle">لوحة الأبطال</h2>
     <div id="boardResult"></div>
+  </div>
+  <div class="card">
+    <h2>تغيير اسمك</h2>
+    <div class="meta" id="renameTime" style="text-align:center;margin-bottom:8px"></div>
+    <input type="text" id="renameInp" maxlength="25" placeholder="اكتب اسمك الجديد">
+    <div class="err" id="renameMsg"></div>
+    <div class="center"><button type="button" class="btn alt" id="btnRename">حفظ الاسم</button></div>
   </div>
   <div class="center">
     <button type="button" class="btn" id="btnAgain">العب مرة أخرى</button>
@@ -958,6 +965,69 @@ function updateBoard(name, level, score, correct, timeIdx){
 var sel = {level:0, time:-1};
 var playerName = "";
 
+/* [إضافة v16] اسم تلقائي: مستخدم1، مستخدم2 ... وإمكانية تغيير الاسم بعد المسابقة */
+function nextGuestName(){
+  var n = load("qz_ucount", 0) || 0, board = load("qz2_board", []), used, i, nm;
+  do{
+    n++; nm = "مستخدم" + n; used = false;
+    for(i = 0; i < board.length; i++){ if(board[i].n === nm){ used = true; break; } }
+  }while(used);
+  save("qz_ucount", n);
+  return nm;
+}
+var renameUntil = 0, renameTimer = null, RENAME_MS = 5 * 60 * 1000;
+function lockRename(){
+  if(renameTimer){ clearInterval(renameTimer); renameTimer = null; }
+  renameUntil = 0;
+  $("renameInp").disabled = true; $("btnRename").disabled = true;
+  $("renameInp").style.opacity = ".5"; $("btnRename").style.opacity = ".5";
+  setText("renameTime", "🔒 انتهت مدة تغيير الاسم (5 دقائق) وتم قفله");
+}
+function tickRename(){
+  var left = renameUntil - new Date().getTime();
+  if(left <= 0){ lockRename(); return; }
+  var sec = Math.ceil(left / 1000), m = Math.floor(sec / 60), ss = sec % 60;
+  setText("renameTime", "⏳ يمكنك تغيير اسمك خلال " + m + ":" + (ss < 10 ? "0" : "") + ss + " ثم يُقفل");
+}
+function startRenameWindow(){
+  if(renameTimer) clearInterval(renameTimer);
+  renameUntil = new Date().getTime() + RENAME_MS;
+  $("renameInp").disabled = false; $("btnRename").disabled = false;
+  $("renameInp").style.opacity = ""; $("btnRename").style.opacity = "";
+  tickRename();
+  renameTimer = setInterval(tickRename, 1000);
+}
+function renamePlayer(){
+  var inp = $("renameInp"), msg = $("renameMsg");
+  if(!renameUntil || new Date().getTime() > renameUntil){ lockRename(); return; }
+  var nn = trim(inp.value), old = playerName;
+  msg.style.visibility = "visible";
+  if(!nn){ msg.style.color = "#ff9b8f"; setText(msg, "اكتب الاسم الجديد أولاً"); inp.focus(); return; }
+  if(nn === old){ msg.style.color = "#ff9b8f"; setText(msg, "هذا هو اسمك الحالي"); return; }
+  var board = load("qz2_board", []), out = [], i, j, b, dup;
+  for(i = 0; i < board.length; i++){
+    b = board[i];
+    if(b.n.toLowerCase() === old.toLowerCase()) b.n = nn;
+    dup = null;
+    for(j = 0; j < out.length; j++){
+      if(out[j].l === b.l && out[j].n.toLowerCase() === b.n.toLowerCase()){ dup = out[j]; break; }
+    }
+    if(dup){
+      if(b.s > dup.s){ dup.s = b.s; dup.c = b.c; dup.t = b.t; }
+      if(b.n === nn) dup.n = nn;
+    }else out.push(b);
+  }
+  save("qz2_board", out);
+  playerName = nn;
+  if(load("qz_gname", "") === old) save("qz_gname", nn);
+  setText("resName", nn);
+  var list = boardFor(state.level), rank = 0;
+  for(i = 0; i < list.length; i++){ if(list[i].n.toLowerCase() === nn.toLowerCase()){ rank = i + 1; break; } }
+  setText("resRank", rank ? "ترتيبك في مستوى " + LEVELS[state.level].name + ": " + rank : "");
+  renderBoard("boardResult", state.level, nn, 10);
+  msg.style.color = "#8ff0a4"; setText(msg, "تم تغيير اسمك إلى: " + nn);
+}
+
 function pointsPer(level, timeIdx){
   return Math.round(LEVELS[level].base * TIMES[timeIdx].mult);
 }
@@ -1012,7 +1082,7 @@ function renderSetup(){
 
 function toSetup(){
   var name = trim($("playerName").value);
-  if(!name){ $("nameErr").style.visibility = "visible"; $("playerName").focus(); return; }
+  if(!name) name = nextGuestName();
   $("nameErr").style.visibility = "hidden";
   playerName = name;
   sel.level = 0; sel.time = -1;
@@ -1174,6 +1244,9 @@ function finish(){
   var title = !state.answered ? "لم تجب عن أي سؤال" :
               pct >= 90 ? "موسوعة متنقلة!" : pct >= 70 ? "مثقف متميز!" : pct >= 50 ? "جيد، واصل التقدم" : "حاول مرة أخرى وستتحسن";
   setText("resName", playerName);
+  $("renameInp").value = playerName;
+  $("renameMsg").style.visibility = "hidden";
+  startRenameWindow();
   setText("resScore", state.score);
   setText("resTitle", title);
   setText("resMode", "المستوى: " + LEVELS[state.level].name + "  |  الوقت: " + TIMES[state.timeIdx].name);
@@ -1438,6 +1511,8 @@ $("btnGo").onclick = startGame;
 $("btnSetupBack").onclick = goHome;
 $("btnQuit").onclick = quitGame;
 $("btnAgain").onclick = playAgain;
+$("btnRename").onclick = renamePlayer;
+$("renameInp").onkeydown = function(e){ e = e || window.event; if(e.keyCode === 13) renamePlayer(); };
 $("btnHome").onclick = goHome;
 $("btnAdmin").onclick = openAdmin;
 $("btnBack").onclick = goHome;
