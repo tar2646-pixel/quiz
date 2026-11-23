@@ -1,0 +1,20 @@
+الأصوات البشرية في هذا المجلد / Human voice recordings in this folder
+====================================================================
+
+المصدر / Source:
+  GCompris - برنامج تعليمي حر للأطفال من مجتمع KDE
+  https://gcompris.net
+  https://invent.kde.org/education/gcompris-data  (voices/ar , voices/en_US)
+
+التسجيلات / Recordings:
+  ar/*   Arabic sounds made by Makni Bassem - Released under GPL.
+  en/*   English alphabet by Julia Wycherley (2011) / GPL, and other GCompris en_US voices.
+
+الترخيص / License:
+  GNU General Public License (GPL v3 or later), as distributed by the GCompris project.
+  https://www.gnu.org/licenses/gpl-3.0.html
+
+التعديلات / Modifications:
+  Converted from Ogg Vorbis to MP3 (mono, 22.05 kHz, 40 kbps), leading/trailing
+  silence trimmed and loudness normalized. Files renamed:
+  U0030..U0039 -> 0..9 ; other names unchanged (Unicode code point of the letter).
