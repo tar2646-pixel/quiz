@@ -8208,17 +8208,14 @@ var LRN = (function(){
   function childName(){ var n = load("qz_gname", ""); if(!n && typeof playerName !== "undefined") n = playerName; return n || "يا بطل"; }
 
   /* ---------- الشاشات: الرئيسية، المسار، الملصقات ---------- */
-  function home(){
-    lessonMode(false); clearTimers(); cur = null; root = $("lrRoot"); kids(root); if(voxMode === "human") voxPreload();
-    var hd = E("div", "lr-hero"); hd.innerHTML = face("laugh", 130);
-    var tx = E("div"); tx.appendChild(E("div", "lr-hi", "أهلاً " + childName() + "! 👋")); tx.appendChild(E("div", "lr-hi2", "ماذا نتعلم اليوم؟ اختر مغامرتك"));
-    hd.appendChild(tx); root.appendChild(hd);
-    root.appendChild(E("div", "lr-total", "نجومك: ⭐ " + totalStars()));
-    var vw = E("div", "lr-voice"), vl = E("label", null, "🔊 نوع الصوت: "), vs = document.createElement("select");
-    vw.style.cssText = "text-align:center;margin:4px 0 12px;font-size:17px";
-    vs.id = "lrVoice";
-    vs.style.cssText = "width:auto;display:inline-block;margin:0 6px;font-family:inherit;font-size:17px;padding:6px 10px;border-radius:10px;border:2px solid #ffc83d;background:#2a1060;color:#fff";
-    var opts = [["human", "صوت بشري"], ["device", "صوت افتراضي"]];
+  /* قائمة منسدلة ظاهرة لاختيار نوع الصوت (في الرئيسية وصفحة المسار وداخل الدرس) */
+  function voiceSel(compact){
+    var vw = E("div", "lr-voice"), vs = document.createElement("select");
+    vw.style.cssText = compact ? "flex:none;-webkit-flex:none" : "text-align:center;margin:4px 0 12px;font-size:17px";
+    vs.style.cssText = "width:auto;display:inline-block;margin:0 6px;font-family:inherit;cursor:pointer;border-radius:10px;border:2px solid #ffc83d;background:#2a1060;color:#fff;" +
+      (compact ? "font-size:14px;padding:4px 6px" : "font-size:17px;padding:6px 10px");
+    vs.title = "نوع الصوت";
+    var opts = [["human", compact ? "🔊 بشري" : "صوت بشري"], ["device", compact ? "🔊 افتراضي" : "صوت افتراضي"]];
     for(var oi = 0; oi < opts.length; oi++){ var op = document.createElement("option"); op.value = opts[oi][0]; op.text = opts[oi][1]; vs.appendChild(op); }
     vs.value = voxMode;
     vs.onchange = function(){
@@ -8226,7 +8223,17 @@ var LRN = (function(){
       if(voxMode === "human") voxPreload();
       say(voxMode === "human" ? "حرف باء" : "مرحباً، هذا صوت الجهاز", "ar");
     };
-    vl.htmlFor = "lrVoice"; vw.appendChild(vl); vw.appendChild(vs); root.appendChild(vw);
+    if(!compact) vw.appendChild(E("label", null, "🔊 نوع الصوت: "));
+    vw.appendChild(vs);
+    return vw;
+  }
+  function home(){
+    lessonMode(false); clearTimers(); cur = null; root = $("lrRoot"); kids(root); if(voxMode === "human") voxPreload();
+    var hd = E("div", "lr-hero"); hd.innerHTML = face("laugh", 130);
+    var tx = E("div"); tx.appendChild(E("div", "lr-hi", "أهلاً " + childName() + "! 👋")); tx.appendChild(E("div", "lr-hi2", "ماذا نتعلم اليوم؟ اختر مغامرتك"));
+    hd.appendChild(tx); root.appendChild(hd);
+    root.appendChild(E("div", "lr-total", "نجومك: ⭐ " + totalStars()));
+    root.appendChild(voiceSel(false));
     var box = E("div", "lr-tracks");
     for(var i = 0; i < TR.length; i++) (function(t){
       var c = B("", "lr-track", function(){ sTap(); track(t); }), d = trackDone(t), n = t.items.length;
@@ -8251,6 +8258,7 @@ var LRN = (function(){
     var top = E("div", "lr-top");
     top.appendChild(B("→ رجوع", "btn small alt", home));
     var h = E("div", "lr-ttl", t.name); h.style.color = t.color2; top.appendChild(h);
+    top.appendChild(voiceSel(true));
     root.appendChild(top);
     var nx = nextItem(t), grid = E("div", "lr-path");
     for(var i = 0; i < t.items.length; i++) (function(it, i){
@@ -8282,7 +8290,7 @@ var LRN = (function(){
     var steps = buildSteps(t, it);
     var bar = E("div", "lr-lbar"), x = B("✖", "lr-x", function(){ voxStop(); track(t); });
     var dots = E("div", "lr-dots"); for(var i = 0; i < steps.length; i++) dots.appendChild(E("span"));
-    bar.appendChild(x); bar.appendChild(dots); bar.appendChild(E("div", "lr-ltitle", it.title));
+    bar.appendChild(x); bar.appendChild(dots); bar.appendChild(E("div", "lr-ltitle", it.title)); bar.appendChild(voiceSel(true));
     var stage = E("div", "lr-stage"); mascotBox = E("div", "lr-mascot");
     root.appendChild(bar); root.appendChild(stage); root.appendChild(mascotBox);
     function go(i){
