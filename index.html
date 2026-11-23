@@ -8045,6 +8045,8 @@ var LRN = (function(){
      تُحمَّل الملفات مرة واحدة وتُحفظ في الجهاز (عبر sw.js) لتعمل بلا إنترنت،
      وأي نص ليس له تسجيل يُنطق بصوت الجهاز كما كان. */
   var VOX = {}, voxBuf = {}, voxTok = 0, voxSrc = null, voxStarted = false;
+  /* نوع الصوت: "human" = الملفات المسجلة، "device" = صوت الجهاز (القديم) */
+  var voxMode = load("lr_voice", "human") === "device" ? "device" : "human";
   var AR_TEENS = ["", "أحد عشر", "اثنا عشر", "ثلاثة عشر", "أربعة عشر", "خمسة عشر", "ستة عشر", "سبعة عشر", "ثمانية عشر", "تسعة عشر", "عشرون"];
   (function(){
     function hx(c){ var h = c.charCodeAt(0).toString(16).toUpperCase(); while(h.length < 4) h = "0" + h; return "U" + h; }
@@ -8128,7 +8130,9 @@ var LRN = (function(){
   function say(text, lang){
     if(!soundOn) return;
     lang = lang === "en" ? "en" : "ar";
-    voxPreload(); voxStop();
+    voxStop();
+    if(voxMode === "device"){ ttsSpeak(text, lang); return; }
+    voxPreload();
     voxPlay(voxParts(text, lang), 0, voxTok, lang);
   }
   function tone(seq){ for(var i = 0; i < seq.length; i++) (function(s){ setTimeout(function(){ beep(s[0], s[1], s[2] || "sine"); }, s[3] || 0); })(seq[i]); }
@@ -8205,11 +8209,24 @@ var LRN = (function(){
 
   /* ---------- الشاشات: الرئيسية، المسار، الملصقات ---------- */
   function home(){
-    lessonMode(false); clearTimers(); cur = null; root = $("lrRoot"); kids(root); voxPreload();
+    lessonMode(false); clearTimers(); cur = null; root = $("lrRoot"); kids(root); if(voxMode === "human") voxPreload();
     var hd = E("div", "lr-hero"); hd.innerHTML = face("laugh", 130);
     var tx = E("div"); tx.appendChild(E("div", "lr-hi", "أهلاً " + childName() + "! 👋")); tx.appendChild(E("div", "lr-hi2", "ماذا نتعلم اليوم؟ اختر مغامرتك"));
     hd.appendChild(tx); root.appendChild(hd);
     root.appendChild(E("div", "lr-total", "نجومك: ⭐ " + totalStars()));
+    var vw = E("div", "lr-voice"), vl = E("label", null, "🔊 نوع الصوت: "), vs = document.createElement("select");
+    vw.style.cssText = "text-align:center;margin:4px 0 12px;font-size:17px";
+    vs.id = "lrVoice";
+    vs.style.cssText = "width:auto;display:inline-block;margin:0 6px;font-family:inherit;font-size:17px;padding:6px 10px;border-radius:10px;border:2px solid #ffc83d;background:#2a1060;color:#fff";
+    var opts = [["human", "صوت بشري"], ["device", "صوت افتراضي"]];
+    for(var oi = 0; oi < opts.length; oi++){ var op = document.createElement("option"); op.value = opts[oi][0]; op.text = opts[oi][1]; vs.appendChild(op); }
+    vs.value = voxMode;
+    vs.onchange = function(){
+      voxMode = vs.value === "device" ? "device" : "human"; save("lr_voice", voxMode);
+      if(voxMode === "human") voxPreload();
+      say(voxMode === "human" ? "حرف باء" : "مرحباً، هذا صوت الجهاز", "ar");
+    };
+    vl.htmlFor = "lrVoice"; vw.appendChild(vl); vw.appendChild(vs); root.appendChild(vw);
     var box = E("div", "lr-tracks");
     for(var i = 0; i < TR.length; i++) (function(t){
       var c = B("", "lr-track", function(){ sTap(); track(t); }), d = trackDone(t), n = t.items.length;
