@@ -8026,16 +8026,110 @@ var LRN = (function(){
   function loadVoices(){ try{ voices = window.speechSynthesis ? speechSynthesis.getVoices() : []; }catch(e){ voices = []; } }
   if(window.speechSynthesis){ loadVoices(); try{ speechSynthesis.onvoiceschanged = loadVoices; }catch(e){} }
   function canSpeak(){ return !!window.speechSynthesis && !!window.SpeechSynthesisUtterance; }
-  function say(text, lang){
-    if(!soundOn || !canSpeak()) return;
+  function ttsSpeak(text, lang, cb){
+    var done = false; function fin(){ if(done) return; done = true; if(cb) cb(); }
+    if(!canSpeak()){ setTimeout(fin, 10); return; }
     try{
-      speechSynthesis.cancel();
       var u = new SpeechSynthesisUtterance(text), want = lang === "en" ? "en" : "ar", v = null;
       u.lang = want === "en" ? "en-US" : "ar-SA"; u.rate = 0.82; u.pitch = 1.15;
       for(var i = 0; i < voices.length; i++) if(voices[i].lang && voices[i].lang.toLowerCase().indexOf(want) === 0){ v = voices[i]; if(/female|woman|zira|samantha|maged|laila|hoda/i.test(voices[i].name)) break; }
       if(v) u.voice = v;
+      u.onend = fin; u.onerror = fin;
+      setTimeout(fin, 1500 + String(text).length * 140);   /* احتياط إن لم يصل حدث النهاية */
       speechSynthesis.speak(u);
-    }catch(e){}
+    }catch(e){ fin(); }
+  }
+
+  /* ---------- [إضافة v18] أصوات بشرية مسجلة ----------
+     المصدر: مشروع GCompris التعليمي (KDE) - رخصة GPL. التفاصيل في sounds/LICENSE.txt
+     تُحمَّل الملفات مرة واحدة وتُحفظ في الجهاز (عبر sw.js) لتعمل بلا إنترنت،
+     وأي نص ليس له تسجيل يُنطق بصوت الجهاز كما كان. */
+  var VOX = {}, voxBuf = {}, voxTok = 0, voxSrc = null, voxStarted = false;
+  var AR_TEENS = ["", "أحد عشر", "اثنا عشر", "ثلاثة عشر", "أربعة عشر", "خمسة عشر", "ستة عشر", "سبعة عشر", "ثمانية عشر", "تسعة عشر", "عشرون"];
+  (function(){
+    function hx(c){ var h = c.charCodeAt(0).toString(16).toUpperCase(); while(h.length < 4) h = "0" + h; return "U" + h; }
+    var i, n;
+    for(i = 0; i < LR_AR.length; i++){
+      var f = "ar/" + hx(LR_AR[i][0]) + ".mp3";
+      VOX["ar|" + LR_AR[i][0]] = f; VOX["ar|" + LR_AR[i][1]] = f; VOX["ar|حرف " + LR_AR[i][1]] = f;
+    }
+    for(n = 0; n <= 10; n++){ VOX["ar|" + LR_NUM_W[n]] = "ar/" + n + ".mp3"; VOX["ar|" + n] = "ar/" + n + ".mp3"; }
+    for(n = 11; n <= 20; n++){
+      VOX["ar|" + AR_TEENS[n - 10]] = "ar/" + n + ".mp3"; VOX["ar|" + n] = "ar/" + n + ".mp3";
+      if(n < 20) VOX["ar|عشرة و" + LR_NUM_W[n - 10]] = "ar/" + n + ".mp3";
+    }
+    for(i = 0; i < LR_EN.length; i++){ var e = "en/" + hx(LR_EN[i][0].toLowerCase()) + ".mp3"; VOX["en|" + LR_EN[i][0]] = e; VOX["en|" + LR_EN[i][0].toLowerCase()] = e; }
+    for(n = 0; n <= 20; n++) VOX["en|" + n] = "en/" + n + ".mp3";
+    VOX["ar|أحسنت يا بطل"] = "ar/great.mp3"; VOX["ar|ممتاز! ثلاث نجوم"] = "ar/perfect.mp3";
+    VOX["en|Try again!"] = "en/try_again.mp3";
+  })();
+  function voxCtx(){
+    try{ if(!audioCtx){ var AC = window.AudioContext || window.webkitAudioContext; if(AC) audioCtx = new AC(); } }catch(e){}
+    return audioCtx;
+  }
+  function voxLoad(f){
+    if(voxBuf[f]) return;
+    var c = voxCtx(); if(!c || !window.fetch) return;
+    voxBuf[f] = "loading";
+    fetch("sounds/" + f).then(function(r){ if(!r.ok) throw 0; return r.arrayBuffer(); }).then(function(ab){
+      c.decodeAudioData(ab, function(b){ voxBuf[f] = b; }, function(){ voxBuf[f] = "fail"; });
+    })["catch"](function(){ voxBuf[f] = null; });
+  }
+  function voxPreload(){
+    if(voxStarted) return; voxStarted = true;
+    var seen = {}, k;
+    for(k in VOX) if(VOX.hasOwnProperty(k) && !seen[VOX[k]]){ seen[VOX[k]] = 1; voxLoad(VOX[k]); }
+  }
+  function voxReady(f){ var b = voxBuf[f]; return b && typeof b === "object"; }
+  /* يقسّم النص إلى أجزاء: ما له تسجيل يُشغَّل، والباقي يُنطق آلياً */
+  function voxParts(text, lang){
+    text = String(text).replace(/^\s+|\s+$/g, "");
+    if(VOX[lang + "|" + text]) return [{f:VOX[lang + "|" + text], t:text}];
+    var out = [], segs = text.split(/[.!؟?،,]+\s*/), i, k;
+    for(i = 0; i < segs.length; i++){
+      var sg = segs[i].replace(/^\s+|\s+$/g, ""); if(!sg) continue;
+      if(VOX[lang + "|" + sg]){ out.push({f:VOX[lang + "|" + sg], t:sg}); continue; }
+      var w = sg.split(/\s+/), hit = false;
+      for(k = 1; k < w.length && !hit; k++){                       /* «المجموع خمسة» */
+        var suf = w.slice(k).join(" ");
+        if(VOX[lang + "|" + suf]){ out.push({t:w.slice(0, k).join(" ")}); out.push({f:VOX[lang + "|" + suf], t:suf}); hit = true; }
+      }
+      for(k = w.length - 1; k >= 1 && !hit; k--){                  /* «خمسة أكبر» */
+        var pre = w.slice(0, k).join(" ");
+        if(VOX[lang + "|" + pre]){ out.push({f:VOX[lang + "|" + pre], t:pre}); out.push({t:w.slice(k).join(" ")}); hit = true; }
+      }
+      if(!hit) out.push({t:sg});
+    }
+    return out;
+  }
+  function voxStop(){
+    voxTok++;
+    if(voxSrc){ try{ voxSrc.onended = null; voxSrc.stop(0); }catch(e){} voxSrc = null; }
+    if(window.speechSynthesis){ try{ speechSynthesis.cancel(); }catch(e){} }
+  }
+  function voxPlay(parts, i, tok, lang){
+    if(tok !== voxTok || i >= parts.length) return;
+    var p = parts[i], next = function(){ setTimeout(function(){ voxPlay(parts, i + 1, tok, lang); }, 90); };
+    if(p.f && voxReady(p.f)){
+      var c = voxCtx();
+      try{
+        if(c.state === "suspended" && c.resume) c.resume();
+        var src = c.createBufferSource(), g = c.createGain(); g.gain.value = 1;
+        src.buffer = voxBuf[p.f]; src.connect(g); g.connect(c.destination);
+        var ended = false; src.onended = function(){ if(ended) return; ended = true; if(voxSrc === src) voxSrc = null; next(); };
+        voxSrc = src; src.start(0);
+        setTimeout(function(){ if(!ended && tok === voxTok){ ended = true; next(); } }, voxBuf[p.f].duration * 1000 + 700);
+        return;
+      }catch(e){}
+    }
+    if(p.f) voxLoad(p.f);
+    ttsSpeak(p.t, lang, next);
+  }
+  function say(text, lang){
+    if(!soundOn) return;
+    lang = lang === "en" ? "en" : "ar";
+    voxPreload(); voxStop();
+    voxPlay(voxParts(text, lang), 0, voxTok, lang);
   }
   function tone(seq){ for(var i = 0; i < seq.length; i++) (function(s){ setTimeout(function(){ beep(s[0], s[1], s[2] || "sine"); }, s[3] || 0); })(seq[i]); }
   function sGood(){ tone([[660, 90, "sine", 0], [880, 90, "sine", 90], [1175, 160, "sine", 180]]); }
@@ -8111,7 +8205,7 @@ var LRN = (function(){
 
   /* ---------- الشاشات: الرئيسية، المسار، الملصقات ---------- */
   function home(){
-    lessonMode(false); clearTimers(); cur = null; root = $("lrRoot"); kids(root);
+    lessonMode(false); clearTimers(); cur = null; root = $("lrRoot"); kids(root); voxPreload();
     var hd = E("div", "lr-hero"); hd.innerHTML = face("laugh", 130);
     var tx = E("div"); tx.appendChild(E("div", "lr-hi", "أهلاً " + childName() + "! 👋")); tx.appendChild(E("div", "lr-hi2", "ماذا نتعلم اليوم؟ اختر مغامرتك"));
     hd.appendChild(tx); root.appendChild(hd);
@@ -8129,6 +8223,9 @@ var LRN = (function(){
     root.appendChild(B("📒 دفتر الملصقات", "btn alt lr-wide", stickers));
     var tip = E("div", "lr-tip", "نصيحة للمعلّم وولي الأمر: ارفعوا صوت الجهاز ليسمع الطفل نطق الحروف والكلمات، والدروس تُحفظ تلقائياً على هذا الجهاز.");
     root.appendChild(tip);
+    var cr = E("div", "lr-credit", "الأصوات البشرية للحروف والأرقام: مشروع GCompris التعليمي (KDE) – رخصة GPL");
+    cr.style.cssText = "text-align:center;font-size:12px;opacity:.6;margin:10px 0 4px";
+    root.appendChild(cr);
   }
   function shade(c){ var n = parseInt(c.substring(1), 16), r = (n >> 16) * 0.7, g = ((n >> 8) & 255) * 0.7, b = (n & 255) * 0.7; return "rgb(" + (r | 0) + "," + (g | 0) + "," + (b | 0) + ")"; }
   function nextItem(t){ for(var i = 0; i < t.items.length; i++) if(!stars(t.items[i].id)) return t.items[i]; return null; }
@@ -8166,7 +8263,7 @@ var LRN = (function(){
   function lesson(t, it){
     lessonMode(true); clearTimers(); root = $("lrRoot"); kids(root); cur = {t:t, it:it, mistakes:0, step:0};
     var steps = buildSteps(t, it);
-    var bar = E("div", "lr-lbar"), x = B("✖", "lr-x", function(){ if(window.speechSynthesis) try{ speechSynthesis.cancel(); }catch(e){} track(t); });
+    var bar = E("div", "lr-lbar"), x = B("✖", "lr-x", function(){ voxStop(); track(t); });
     var dots = E("div", "lr-dots"); for(var i = 0; i < steps.length; i++) dots.appendChild(E("span"));
     bar.appendChild(x); bar.appendChild(dots); bar.appendChild(E("div", "lr-ltitle", it.title));
     var stage = E("div", "lr-stage"); mascotBox = E("div", "lr-mascot");
@@ -8653,7 +8750,7 @@ var LRN = (function(){
     round(); talk("أسرع يا بطل الحساب!", "wow");
   }
 
-  return {home:home, face:face, leave:function(){ lessonMode(false); clearTimers(); }};
+  return {home:home, face:face, leave:function(){ lessonMode(false); clearTimers(); voxStop(); }};
 })();
 function openLearn(){ LRN.home(); show("screen-learn"); }
 
