@@ -467,6 +467,47 @@ label{display:block;margin:10px 0 4px;font-size:18px}
 }
 body.lrlesson #mainNav,body.lrlesson #screen-learn > h1,body.lrlesson #screen-learn > .sub{display:none}
 @media (max-width:480px){ .lr-eq{flex-direction:column;-webkit-flex-direction:column;gap:2px;font-size:34px}.lr-eq b{line-height:1}.lr-grp{line-height:44px} .lr-form{min-width:52px;padding:3px 6px}.lr-form b{font-size:32px} .lr-forms{gap:5px} .lr-mascot{bottom:74px} }
+
+/* ===== [إضافة v21] الشريط العلوي: زر الرئيسية + الثيمات ===== */
+#topBar{display:flex;display:-webkit-flex;align-items:center;-webkit-align-items:center;justify-content:space-between;-webkit-justify-content:space-between;margin:0 0 8px;gap:8px}
+#topBar .thome{width:48px;height:48px;border-radius:50%;border:2px solid #ffc83d;background:rgba(255,200,61,.15);font-size:24px;line-height:44px;padding:0;cursor:pointer;color:#fff}
+#topBar .thome:active{background:#ffc83d}
+#topBar .tthemes{display:flex;display:-webkit-flex;align-items:center;-webkit-align-items:center;gap:6px;direction:rtl}
+#topBar .tlbl{font-size:14px;color:#d9c9ff;margin-left:2px}
+#topBar .tsw{width:34px;height:34px;border-radius:50%;border:2px solid rgba(255,255,255,.45);padding:0;cursor:pointer;font-size:16px;line-height:30px;box-shadow:0 2px 6px rgba(0,0,0,.35)}
+#topBar .tsw.on{border:3px solid #ffc83d;box-shadow:0 0 0 2px rgba(255,200,61,.45),0 2px 8px rgba(0,0,0,.4)}
+body.th-ocean{background:#0a4d68;background:linear-gradient(135deg,#031d33 0%,#0a4d68 55%,#0e7490 100%)}
+body.th-forest{background:#14532d;background:linear-gradient(135deg,#06210f 0%,#14532d 55%,#3f6212 100%)}
+body.th-rose{background:#5b0e3e;background:linear-gradient(135deg,#1f0a24 0%,#5b0e3e 55%,#9d174d 100%)}
+body.th-ocean .card{border-color:rgba(94,234,212,.4)}
+body.th-forest .card{border-color:rgba(163,230,53,.4)}
+body.th-rose .card{border-color:rgba(251,182,206,.45)}
+
+/* ===== [إضافة v22] الألوان ===== */
+.lr-sws{display:flex;display:-webkit-flex;justify-content:center;-webkit-justify-content:center;flex-wrap:wrap;-webkit-flex-wrap:wrap;gap:14px;margin:12px 0}
+.lr-swb{display:inline-flex;display:-webkit-inline-flex;flex-direction:column;-webkit-flex-direction:column;align-items:center;-webkit-align-items:center;gap:4px;background:none;border:0;padding:4px;cursor:pointer;font-family:inherit;color:#fff;transition:transform .15s;touch-action:manipulation}
+.lr-swc{display:block;width:84px;height:84px;border-radius:50%;border:4px solid #fff;box-shadow:0 5px 0 rgba(0,0,0,.25),0 6px 14px rgba(0,0,0,.3)}
+.lr-swb.big .lr-swc{width:110px;height:110px}
+.lr-swt{font-size:19px;font-weight:bold}
+.lr-swb:active{transform:scale(.92)}
+.lr-swb.good{transform:scale(1.14)}.lr-swb.good .lr-swc{box-shadow:0 0 0 6px #8dffb8,0 6px 14px rgba(0,0,0,.3)}
+.lr-swb.popin .lr-swc{animation:lrBounce .7s;-webkit-animation:lrBounce .7s}
+.lr-qm{display:flex!important;display:-webkit-flex!important;align-items:center;-webkit-align-items:center;justify-content:center;-webkit-justify-content:center;background:rgba(255,255,255,.15)!important;color:#ffc83d;font-size:34px;line-height:1;font-weight:bold;border-style:dashed!important}
+.lr-blob{width:190px;height:190px;border-radius:50%;margin:8px auto 4px;border:6px solid #fff;box-shadow:0 8px 0 rgba(0,0,0,.25);cursor:pointer;animation:lrBounce 1s;-webkit-animation:lrBounce 1s}
+.lr-blob.in{animation:lrBounce .6s;-webkit-animation:lrBounce .6s}
+.lr-en{width:auto!important;padding:0 16px!important;font-size:22px!important;margin:4px auto}
+.lr-thing{font-size:110px;line-height:1.2;text-align:center;animation:lrBounce .8s;-webkit-animation:lrBounce .8s}
+.lr-mix{display:flex;display:-webkit-flex;align-items:center;-webkit-align-items:center;justify-content:center;-webkit-justify-content:center;gap:6px;flex-wrap:wrap;-webkit-flex-wrap:wrap;margin:6px 0;padding:6px 0;border-bottom:1px dashed rgba(255,255,255,.2)}
+.lr-mix .lr-swc{width:64px;height:64px}
+.lr-mop{font-size:34px;font-weight:bold;color:#ffc83d}
+.lr-cball{font-size:0}
+.lr-paint{max-width:520px;margin:6px auto;border-radius:20px;overflow:hidden;border:4px solid #fff;background:#fffdf6}
+.lr-psvg{display:block;width:100%;height:auto}
+.lr-pglow{stroke:#ff9800!important;stroke-width:4!important;stroke-dasharray:7 5;animation:lrGlow 1s infinite;-webkit-animation:lrGlow 1s infinite}
+@keyframes lrGlow{0%,100%{opacity:1}50%{opacity:.45}}
+@-webkit-keyframes lrGlow{0%,100%{opacity:1}50%{opacity:.45}}
+.lr-pal .lr-swc{width:58px;height:58px}.lr-pal .lr-swt{font-size:15px}.lr-pal{gap:8px}
+@media (max-width:600px){ .lr-swc{width:70px;height:70px}.lr-blob{width:150px;height:150px}.lr-thing{font-size:90px}.lr-mix .lr-swc{width:52px;height:52px}.lr-pal .lr-swc{width:48px;height:48px} }
 </style>
 </head>
 <body>
@@ -6751,7 +6792,7 @@ labReg({id:"sort", name:"فرز الألوان", tag:"تفكير", sd:"رتّب 
 /* =====================================================================
    10) توصيل البلاطات (خط فيه منعطفان على الأكثر)
    ===================================================================== */
-var ON_EMO = ["🐶","🐱","🐰","🦊","🐼","🐸","🐵","🦁","🐯","🐨","🐷","🐮","🐔","🐧","🐢","🐙","🦋","🐝","🍎","🍌","🍇","🍓","🍉","🍒","🌻","⭐","⚽","🎈"];
+var ON_EMO = ["🐶","🐱","🐰","🦊","🐼","🐸","🐵","🦁","🐯","🐨","🐴","🐮","🐔","🐧","🐢","🐙","🦋","🐝","🍎","🍌","🍇","🍓","🍉","🍒","🌻","⭐","⚽","🎈"];
 function onetStart(o){
   var L = o.lv, COLS = [0, 8, 10, 12][L], ROWS = [0, 5, 6, 7][L], TIME = [0, 240, 300, 360][L];
   makeCanvas();
@@ -7967,6 +8008,19 @@ var LR_THINGS = ["🍎","⭐","🐟","🎈","🌸","🚗","🍓","🐣","⚽","�
 function lrHindi(n){ return String(n).replace(/[0-9]/g, function(d){ return LR_HINDI.charAt(+d); }); }
 
 /* المنهج: وحدات من 4 دروس ثم مراجعة */
+/* [إضافة v22] الألوان: [الاسم، الإنجليزي، اللون، أشياء بهذا اللون، رمز الدرس] */
+var LR_COL = [
+  ["أحمر", "Red", "#e53935", [["تفاحة", "🍎"], ["فراولة", "🍓"], ["سيارة إطفاء", "🚒"]], "🔴"],
+  ["أصفر", "Yellow", "#fdd835", [["موزة", "🍌"], ["شمس", "🌞"], ["كتكوت", "🐥"]], "🟡"],
+  ["أزرق", "Blue", "#1e88e5", [["حوت", "🐳"], ["قطرة ماء", "💧"], ["قميص", "👕"]], "🔵"],
+  ["أخضر", "Green", "#43a047", [["ضفدع", "🐸"], ["شجرة", "🌳"], ["خيار", "🥒"]], "🟢"],
+  ["برتقالي", "Orange", "#fb8c00", [["برتقالة", "🍊"], ["جزرة", "🥕"], ["يقطينة", "🎃"]], "🟠"],
+  ["بنفسجي", "Purple", "#8e24aa", [["عنب", "🍇"], ["باذنجان", "🍆"], ["مظلة", "☂️"]], "🟣"],
+  ["وردي", "Pink", "#f06292", [["زهرة", "🌸"], ["طائر الفلامنغو", "🦩"], ["توليب", "🌷"]], "🌸"],
+  ["بني", "Brown", "#795548", [["دب", "🐻"], ["شوكولاتة", "🍫"], ["كعكة", "🍪"]], "🟤"],
+  ["أسود", "Black", "#222222", [["قبعة", "🎩"], ["كرة", "🎱"], ["عنكبوت", "🕷️"]], "⚫"],
+  ["أبيض", "White", "#fafafa", [["خروف", "🐑"], ["غيمة", "☁️"], ["رجل الثلج", "⛄"]], "⚪"]
+];
 function lrBuildTracks(){
   var T = [], i, u, items;
   /* الحروف العربية */
@@ -8001,6 +8055,17 @@ function lrBuildTracks(){
   items.push({id:"nu20", kind:"n20", title:"العدّ حتى ٢٠", emo:"🔟"});
   items.push({id:"nuMix", kind:"mix", title:"البطل الحاسب", emo:"🦸", review:true});
   T.push({id:"nu", name:"الأرقام والحساب", icon:"١ ٢ ٣", color:"#e67e22", color2:"#ffcc80", items:items});
+  /* الألوان */
+  items = [];
+  var cg = [[0, 1, 2], [3, 4, 5], [6, 7, 8, 9]];
+  for(i = 0; i < cg.length; i++){
+    for(u = 0; u < cg[i].length; u++){ var ci = cg[i][u]; items.push({id:"co" + ci, kind:"co", idx:ci, title:LR_COL[ci][0], emo:LR_COL[ci][4]}); }
+    items.push({id:"coR" + i, kind:"coR", group:cg[i], title:"مراجعة", emo:"🏆", review:true});
+  }
+  items.push({id:"coMix", kind:"coMix", title:"خلط الألوان", emo:"🧪"});
+  items.push({id:"coPaint", kind:"coPaint", title:"لوّن الصورة", emo:"🖍️"});
+  items.push({id:"coHero", kind:"coHero", title:"بطل الألوان", emo:"🌈", review:true});
+  T.push({id:"co", name:"الألوان", icon:"🔴🟡🔵", color:"#c2185b", color2:"#f8bbd0", items:items});
   return T;
 }
 
@@ -8370,6 +8435,21 @@ var LRN = (function(){
     else if(it.kind === "sub"){ S.push(function(st, done){ actIntroMath(st, "-", done); }); S.push(function(st, done){ actMath(st, "-", 8, done); }); }
     else if(it.kind === "n20"){ S.push(function(st, done){ actTens(st, 6, done); }); S.push(function(st, done){ actOrder(st, [11, 12, 13, 14, 15, 16, 17, 18, 19, 20], 2, done); }); }
     else if(it.kind === "mix"){ S.push(function(st, done){ actHero(st, 10, done); }); }
+    else if(it.kind === "co"){
+      var C = colL(it.idx), Cs = colAll();
+      S.push(function(st, done){ actColIntro(st, C, done); });
+      S.push(function(st, done){ actColFind(st, [C], 4, done); });
+      S.push(function(st, done){ actColBalloons(st, C, done); });
+      S.push(function(st, done){ actColThing(st, [C], 3, done); });
+    }else if(it.kind === "coR" || it.kind === "coHero"){
+      var G = (it.kind === "coHero" ? [0, 1, 2, 3, 4, 5, 6, 7, 8, 9] : it.group).map(colL);
+      S.push(function(st, done){ actColListen(st, G, it.kind === "coHero" ? 6 : 5, done); });
+      S.push(function(st, done){ actColThing(st, G, it.kind === "coHero" ? 5 : 4, done); });
+      S.push(function(st, done){ actColBalloons(st, pick(G), done); });
+    }else if(it.kind === "coMix"){
+      S.push(function(st, done){ actMixIntro(st, done); });
+      S.push(function(st, done){ actMixQuiz(st, done); });
+    }else if(it.kind === "coPaint"){ S.push(function(st, done){ actPaint(st, done); }); }
     return S;
   }
 
@@ -8550,6 +8630,227 @@ var LRN = (function(){
     if(L) later(function(){ say(L.say, L.lang); }, 300); else if(sayWord) later(function(){ say(sayWord, "ar"); }, 300);
   }
 
+
+  /* =================== [إضافة v22] أنشطة الألوان =================== */
+  function colL(i){ var d = LR_COL[i]; return {i:i, name:d[0], en:d[1], hex:d[2], things:d[3], emo:d[4], light:/fdd835|fafafa|f06292/.test(d[2])}; }
+  function colAll(){ return LR_COL.map(function(d, i){ return colL(i); }); }
+  function swatch(C, withName, fn, big){
+    var b = B("", "lr-swb" + (big ? " big" : ""), fn), c = E("span", "lr-swc");
+    c.style.background = "radial-gradient(circle at 35% 30%,rgba(255,255,255,.55)," + C.hex + " 45%)";
+    b.appendChild(c); if(withName) b.appendChild(E("span", "lr-swt", C.name));
+    return b;
+  }
+  /* «تفاحة» ← «التفاحة»، «سيارة إطفاء» ← «سيارة الإطفاء» */
+  function defArt(w){ var p = String(w).split(" "); if(p.length > 1){ if(p[1].indexOf("ال") !== 0) p[1] = "ال" + p[1]; return p.join(" "); } return w.indexOf("ال") === 0 ? w : "ال" + w; }
+  function otherCols(C, n, pool){ return shuf((pool || colAll()).filter(function(x){ return x.i !== C.i; })).slice(0, n); }
+  /* 1) تعرّف على اللون */
+  function actColIntro(st, C, done){
+    var c = E("div", "lr-card"), blob = E("div", "lr-blob"); blob.style.background = "radial-gradient(circle at 35% 30%,rgba(255,255,255,.6)," + C.hex + " 50%)";
+    blob.onclick = function(){ sPop(); say("اللون ال" + C.name, "ar"); blob.className = "lr-blob"; void blob.offsetWidth; blob.className = "lr-blob in"; };
+    c.appendChild(blob);
+    var nm = E("div", "lr-name", "اللون ال" + C.name); nm.appendChild(spk("اللون ال" + C.name, "ar")); c.appendChild(nm);
+    var en = B(C.en + " 🔊", "lr-hb lr-en", function(){ sTap(); say(C.en, "en"); }); en.style.direction = "ltr"; c.appendChild(en);
+    var wr = E("div", "lr-words");
+    for(var i = 0; i < C.things.length; i++) (function(w){
+      var b = B("", "lr-word", function(){ say(w[0], "ar"); sPop(); b.className = "lr-word pop"; later(function(){ b.className = "lr-word"; }, 400); });
+      b.style.borderColor = C.hex; b.appendChild(E("div", "lr-wemo", w[1])); b.appendChild(E("div", "lr-wtx", w[0])); wr.appendChild(b);
+    })(C.things[i]);
+    c.appendChild(E("div", "lr-qs", "أشياء لونها " + C.name + "، اضغط عليها لتسمعها:")); c.appendChild(wr);
+    st.appendChild(c); nextBtn(st, done, "هيا نلعب 🎨");
+    talk("هذا هو اللون ال" + C.name + "!", "wow");
+    later(function(){ say("هذا هو اللون ال" + C.name, "ar"); }, 400);
+  }
+  /* 2) أين اللون؟ */
+  function actColFind(st, Cs, rounds, done){
+    var r = 0, mis = 0, lock = false;
+    function round(){
+      lock = false; kids(st); var C = Cs[r % Cs.length], opts = shuf([C].concat(otherCols(C, 3)));
+      var q = E("div", "lr-q", "أين اللون "); q.appendChild(E("span", "lr-tg", C.name)); q.appendChild(document.createTextNode("؟")); q.appendChild(spk("أين اللون ال" + C.name, "ar")); st.appendChild(q);
+      var g = E("div", "lr-sws");
+      for(var i = 0; i < opts.length; i++) (function(o){
+        var b = swatch(o, false, function(){ if(lock) return;
+          if(o.i === C.i){ lock = true; b.className += " good"; sGood(); talk(praise("ar"), "laugh"); say("أحسنت. هذا " + C.name, "ar"); r++; later(function(){ if(r >= rounds) done(mis); else round(); }, 900); }
+          else { mis++; sBad(); shake(b); say("هذا " + o.name, "ar"); talk("هذا " + o.name + "، حاول مرة أخرى", "think"); }
+        });
+        g.appendChild(b);
+      })(opts[i]);
+      st.appendChild(g); st.appendChild(E("div", "lr-qs", (r + 1) + " / " + rounds));
+      later(function(){ say("أين اللون ال" + C.name + "؟", "ar"); }, 300);
+    }
+    round();
+  }
+  /* 3) ما لون هذا الشيء؟ */
+  function actColThing(st, Cs, rounds, done){
+    var r = 0, mis = 0, lock = false, list = [];
+    for(var i = 0; i < Cs.length; i++) for(var k = 0; k < Cs[i].things.length; k++) list.push({C:Cs[i], w:Cs[i].things[k]});
+    list = shuf(list);
+    function round(){
+      lock = false; kids(st); var it = list[r % list.length], C = it.C;
+      var pool = Cs.length >= 3 ? Cs : null, opts = shuf([C].concat(otherCols(C, Cs.length >= 4 ? 3 : 2, pool && pool.length > 3 ? pool : null)));
+      var dw = defArt(it.w[0]), q = E("div", "lr-q", "ما لون " + dw + "؟"); q.appendChild(spk("ما لون " + dw + "؟", "ar")); st.appendChild(q);
+      var th = E("div", "lr-thing", it.w[1]); st.appendChild(th);
+      var g = E("div", "lr-sws");
+      for(var j = 0; j < opts.length; j++) (function(o){
+        var b = swatch(o, true, function(){ if(lock) return;
+          if(o.i === C.i){ lock = true; b.className += " good"; sGood(); talk(praise("ar"), "laugh"); say(dw + " لونها " + C.name, "ar"); r++; later(function(){ if(r >= rounds) done(mis); else round(); }, 1100); }
+          else { mis++; sBad(); shake(b); say("لا، هذا " + o.name, "ar"); talk("انظر جيداً إلى اللون", "think"); }
+        });
+        g.appendChild(b);
+      })(opts[j]);
+      st.appendChild(g); st.appendChild(E("div", "lr-qs", (r + 1) + " / " + rounds));
+      later(function(){ say("ما لون " + dw + "؟", "ar"); }, 300);
+    }
+    round();
+  }
+  /* 4) استمع واختر اللون (مراجعة) */
+  function actColListen(st, Cs, rounds, done){
+    var r = 0, mis = 0, lock = false, order = shuf(Cs.slice(0)).concat(shuf(Cs.slice(0))).slice(0, rounds);
+    function round(){
+      lock = false; kids(st); var C = order[r];
+      st.appendChild(E("div", "lr-q", "استمع ثم اضغط على اللون"));
+      st.appendChild(B("🔊", "lr-bigspk", function(){ say("اللون ال" + C.name, "ar"); }));
+      if(!canSpeak() || !soundOn) st.appendChild(E("div", "lr-qs", "(اللون ال" + C.name + ")"));
+      var g = E("div", "lr-sws"), opts = shuf(Cs.length <= 4 ? Cs.slice(0) : [C].concat(otherCols(C, 3, Cs)));
+      for(var i = 0; i < opts.length; i++) (function(o){
+        var b = swatch(o, false, function(){ if(lock) return;
+          if(o.i === C.i){ lock = true; b.className += " good"; sGood(); say(C.name, "ar"); r++; later(function(){ if(r >= order.length) done(mis); else round(); }, 800); }
+          else { mis++; sBad(); shake(b); say("هذا " + o.name + ". نريد " + C.name, "ar"); }
+        });
+        g.appendChild(b);
+      })(opts[i]);
+      st.appendChild(g); st.appendChild(E("div", "lr-qs", (r + 1) + " / " + order.length));
+      later(function(){ say("اللون ال" + C.name, "ar"); }, 300);
+    }
+    round(); talk("استمع جيداً!", "wow");
+  }
+  /* 5) فرقع بالونات اللون */
+  function actColBalloons(st, C, done){
+    var q = E("div", "lr-q", "فرقع البالونات ذات اللون "); q.appendChild(E("span", "lr-tg", C.name)); st.appendChild(q);
+    var sky = E("div", "lr-sky"), cnt = E("div", "lr-qs", ""), need = 6, got = 0, mis = 0, alive = true, last = 0, bl = [], raf = null, others = otherCols(C, 9);
+    st.appendChild(sky); st.appendChild(cnt);
+    function upd(){ setText(cnt, "فرقعت " + got + " من " + need); }
+    function spawn(){
+      var isT = Math.random() < 0.45, K = isT ? C : pick(others), b = E("button", "lr-ball lr-cball");
+      b.type = "button"; b.style.left = rint(4, 80) + "%"; b.style.background = "radial-gradient(circle at 35% 30%,rgba(255,255,255,.7)," + K.hex + " 50%)";
+      if(K.i === 9) b.style.boxShadow = "inset 0 0 0 2px #cfd8dc";
+      var o = {e:b, y:-10, sp:rint(50, 78) * (sky.clientHeight / 420), t:isT};
+      b.onclick = function(){
+        if(!alive || o.dead) return;
+        if(o.t){ o.dead = true; got++; b.className = "lr-ball lr-cball popd"; sPop(); upd(); if(got >= need){ alive = false; sGood(); talk(praise("ar"), "laugh"); later(function(){ done(mis > 2 ? mis - 2 : 0); }, 900); } }
+        else { mis++; sBad(); shake(b); say("هذا " + K.name, "ar"); talk("هذا " + K.name + "! نريد " + C.name, "think"); }
+      };
+      sky.appendChild(b); bl.push(o);
+    }
+    var prev = Date.now();
+    function tick(){
+      if(!alive && !bl.length) return;
+      var nowT = Date.now(), dt = Math.min(0.05, (nowT - prev) / 1000); prev = nowT;
+      if(alive && nowT - last > 800){ last = nowT; spawn(); }
+      var H = sky.clientHeight;
+      for(var i = bl.length - 1; i >= 0; i--){ var o = bl[i]; o.y += o.sp * dt; o.e.style.bottom = o.y + "px";
+        if(o.dead && !o.gone){ o.gone = true; (function(o2){ later(function(){ if(o2.e.parentNode) o2.e.parentNode.removeChild(o2.e); }, 300); })(o); bl.splice(i, 1); continue; }
+        if(o.y > H + 20){ if(o.e.parentNode) o.e.parentNode.removeChild(o.e); bl.splice(i, 1); } }
+      if(st.parentNode) raf = requestAnimationFrame(tick);
+    }
+    lessonAbort = function(){ alive = false; bl = []; if(raf) cancelAnimationFrame(raf); };
+    upd(); raf = requestAnimationFrame(tick);
+    talk("هيا نفرقع البالونات!", "laugh");
+    later(function(){ say("فرقع البالونات ذات اللون ال" + C.name, "ar"); }, 300);
+  }
+  /* 6) خلط الألوان */
+  var MIXES = [[0, 1, 4], [2, 1, 3], [0, 2, 5], [0, 9, 6], [9, 8, -1]];
+  function mixRow(a, b, res, reveal){
+    var row = E("div", "lr-mix");
+    row.appendChild(swatch(colL(a), true, function(){ sTap(); say(LR_COL[a][0], "ar"); }));
+    row.appendChild(E("span", "lr-mop", "+"));
+    row.appendChild(swatch(colL(b), true, function(){ sTap(); say(LR_COL[b][0], "ar"); }));
+    row.appendChild(E("span", "lr-mop", "="));
+    var r = res >= 0 ? swatch(colL(res), true, function(){ sTap(); say(LR_COL[res][0], "ar"); }) : E("span", "lr-swb");
+    if(res < 0){ var gc = E("span", "lr-swc"); gc.style.background = "radial-gradient(circle at 35% 30%,rgba(255,255,255,.55),#9e9e9e 45%)"; r.appendChild(gc); r.appendChild(E("span", "lr-swt", "رمادي")); }
+    row.appendChild(r); row._res = r;
+    if(!reveal){ r.style.display = "none"; var qm = E("span", "lr-swb"); qm.appendChild(E("span", "lr-swc lr-qm", "؟")); qm.appendChild(E("span", "lr-swt", "\u00a0")); row.appendChild(qm); row._qm = qm; }
+    return row;
+  }
+  function actMixIntro(st, done){
+    head(st, "تعال نخلط الألوان! 🧪", "اضغط على زر «اخلط» لترى اللون الجديد");
+    var shown = 0, box = E("div", "lr-card"), list = MIXES.slice(0, 4), nb = null;
+    for(var i = 0; i < list.length; i++) (function(m){
+      var row = mixRow(m[0], m[1], m[2], false), mb = B("اخلط ✨", "btn small", function(){
+        if(mb.disabled) return; mb.disabled = true; mb.style.visibility = "hidden";
+        row._qm.style.display = "none"; row._res.style.display = ""; row._res.className += " popin"; sWin();
+        say(LR_COL[m[0]][0] + " و" + LR_COL[m[1]][0] + " يصبحان " + LR_COL[m[2]][0], "ar");
+        shown++; if(shown >= list.length && nb) nb.style.display = "";
+      });
+      row.appendChild(mb); box.appendChild(row);
+    })(list[i]);
+    st.appendChild(box); nb = nextBtn(st, done, "هيا نختبر أنفسنا ←"); nb.style.display = "none";
+    talk("ماذا يحدث إذا خلطنا لونين؟", "wow");
+  }
+  function actMixQuiz(st, done){
+    var order = shuf(MIXES.slice(0, 4)), r = 0, mis = 0, lock = false;
+    function round(){
+      lock = false; kids(st); var m = order[r], R = colL(m[2]);
+      st.appendChild(E("div", "lr-q", "ما اللون الذي ينتج؟"));
+      var row = mixRow(m[0], m[1], m[2], false); st.appendChild(row);
+      var g = E("div", "lr-sws"), opts = shuf([R].concat(otherCols(R, 2, colAll().filter(function(x){ return x.i !== m[0] && x.i !== m[1]; }))));
+      for(var i = 0; i < opts.length; i++) (function(o){
+        var b = swatch(o, true, function(){ if(lock) return;
+          if(o.i === R.i){ lock = true; b.className += " good"; row._qm.style.display = "none"; row._res.style.display = ""; row._res.className += " popin"; sGood(); talk(praise("ar"), "laugh"); say(LR_COL[m[0]][0] + " و" + LR_COL[m[1]][0] + " يصبحان " + R.name, "ar"); r++; later(function(){ if(r >= order.length) done(mis); else round(); }, 1500); }
+          else { mis++; sBad(); shake(b); say("لا، ليس " + o.name, "ar"); }
+        });
+        g.appendChild(b);
+      })(opts[i]);
+      st.appendChild(g); st.appendChild(E("div", "lr-qs", (r + 1) + " / " + order.length));
+    }
+    round(); talk("تذكّر ما تعلمناه!", "think");
+  }
+  /* 7) لوّن الصورة */
+  var PAINT_PARTS = [
+    ["sun", 1, "الشمس", '<circle cx="250" cy="48" r="30"/>'],
+    ["cloud", 9, "الغيمة", '<path d="M40 70a18 18 0 0 1 22-24a22 22 0 0 1 40 0a17 17 0 0 1 14 24z"/>'],
+    ["leaves", 3, "أوراق الشجرة", '<circle cx="80" cy="128" r="40"/><circle cx="52" cy="150" r="28"/><circle cx="108" cy="150" r="28"/>'],
+    ["trunk", 7, "جذع الشجرة", '<rect x="70" y="170" width="22" height="50" rx="4"/>'],
+    ["apple", 0, "التفاحة", '<circle cx="96" cy="132" r="11"/><circle cx="64" cy="146" r="10"/>'],
+    ["flower", 6, "الزهرة", '<circle cx="200" cy="170" r="12"/><circle cx="222" cy="170" r="12"/><circle cx="211" cy="152" r="12"/><circle cx="211" cy="188" r="12"/>'],
+    ["center", 1, "وسط الزهرة", '<circle cx="211" cy="170" r="8"/>'],
+    ["car", 2, "السيارة", '<path d="M150 214h-0l8-16h40l10 16h14v12h-80v-12z"/>']
+  ];
+  function actPaint(st, done){
+    head(st, "لوّن الصورة 🖍️", "اختر اللون المناسب لكل جزء يلمع");
+    var NS = "http://www.w3.org/2000/svg", wrapP = E("div", "lr-paint"), svg = document.createElementNS(NS, "svg");
+    svg.setAttribute("viewBox", "0 0 300 240"); svg.setAttribute("class", "lr-psvg");
+    svg.innerHTML = '<rect x="0" y="0" width="300" height="240" fill="#fffdf6"/><rect x="0" y="214" width="300" height="26" fill="#e8f5e9"/>' +
+      '<rect x="207" y="182" width="8" height="34" fill="#81c784"/>' +
+      '<circle cx="170" cy="228" r="8" fill="#455a64"/><circle cx="214" cy="228" r="8" fill="#455a64"/>';
+    var parts = [], i;
+    for(i = 0; i < PAINT_PARTS.length; i++){
+      var g = document.createElementNS(NS, "g"); g.innerHTML = PAINT_PARTS[i][3];
+      g.setAttribute("fill", "#eceff1"); g.setAttribute("stroke", "#90a4ae"); g.setAttribute("stroke-width", "2");
+      svg.appendChild(g); parts.push({g:g, ci:PAINT_PARTS[i][1], name:PAINT_PARTS[i][2]});
+    }
+    /* الوسط فوق الزهرة، والتفاح فوق الأوراق: ترتيب الرسم يكفي */
+    wrapP.appendChild(svg); st.appendChild(wrapP);
+    var q = E("div", "lr-q", ""); st.insertBefore(q, wrapP);
+    var pal = E("div", "lr-sws lr-pal"), opts = [0, 1, 2, 3, 6, 7, 9, 4].map(colL), k = 0, mis = 0, lock = false;
+    function cue(){
+      for(var j = 0; j < parts.length; j++) parts[j].g.setAttribute("class", j === k ? "lr-pglow" : "");
+      var P = parts[k]; kids(q); q.appendChild(document.createTextNode("لوّن " + P.name + " باللون ")); q.appendChild(E("span", "lr-tg", LR_COL[P.ci][0]));
+      q.appendChild(spk("لوّن " + P.name + " باللون ال" + LR_COL[P.ci][0], "ar"));
+      later(function(){ say("لوّن " + P.name + " باللون ال" + LR_COL[P.ci][0], "ar"); }, 250);
+    }
+    for(i = 0; i < opts.length; i++) (function(o){
+      var b = swatch(o, true, function(){
+        if(lock || k >= parts.length) return; var P = parts[k];
+        if(o.i === P.ci){
+          sPop(); P.g.setAttribute("fill", o.hex); P.g.setAttribute("stroke", o.i === 9 ? "#90a4ae" : "rgba(0,0,0,.25)"); P.g.setAttribute("class", "");
+          k++; if(k >= parts.length){ lock = true; sWin(); talk("لوحتك جميلة جداً! 🎨", "laugh"); say("ما أجمل لوحتك", "ar"); later(function(){ done(mis > 3 ? mis - 3 : 0); }, 2200); }
+          else { talk(praise("ar"), "laugh"); lock = true; later(function(){ lock = false; cue(); }, 600); }
+        }else{ mis++; sBad(); shake(b); say("هذا " + o.name + ". نريد " + LR_COL[P.ci][0], "ar"); }
+      });
+      pal.appendChild(b);
+    })(opts[i]);
+    st.appendChild(pal); cue(); talk("هيا نلوّن معاً!", "wow");
+  }
   /* 6) استمع واختر (للمراجعة) */
   function actListen(st, Ls, done){
     var lock = false, r = 0, mis = 0, order = shuf(Ls.slice(0)).concat(shuf(Ls.slice(0))).slice(0, Math.max(4, Ls.length));
@@ -8805,6 +9106,49 @@ function openLearn(){ LRN.home(); show("screen-learn"); }
   upd("screen-start");
 })();
 
+
+/* ---------- [إضافة v21] زر الرئيسية في أعلى كل صفحة + ثلاث ثيمات ---------- */
+(function(){
+  var w = document.querySelector(".wrap"); if(!w) return;
+  var bar = document.createElement("div"); bar.id = "topBar";
+  var cur = "screen-start";
+  var hb = document.createElement("button"); hb.type = "button"; hb.className = "thome"; hb.title = "الصفحة الرئيسية";
+  hb.setAttribute("aria-label", "الصفحة الرئيسية"); hb.appendChild(document.createTextNode("🏠"));
+  hb.onclick = function(){
+    try{ beep(520, 40); }catch(e){}
+    if(cur === "screen-play"){ try{ $("btnGMenu").click(); }catch(e){} }
+    if(cur === "screen-game" && !state.finished){ quitGame(); return; }
+    goHome();
+  };
+  var THEMES = [["", "بنفسجي", "#2a1060", "linear-gradient(135deg,#0b1437,#5b1a7a)"],
+                ["th-ocean", "المحيط", "#0a4d68", "linear-gradient(135deg,#031d33,#0e7490)"],
+                ["th-forest", "الغابة", "#14532d", "linear-gradient(135deg,#06210f,#3f6212)"],
+                ["th-rose", "الورد", "#5b0e3e", "linear-gradient(135deg,#1f0a24,#9d174d)"]];
+  var tb = document.createElement("div"); tb.className = "tthemes";
+  var lbl = document.createElement("span"); lbl.className = "tlbl"; lbl.appendChild(document.createTextNode("🎨")); tb.appendChild(lbl);
+  var sws = [];
+  function apply(cls){
+    var b = document.body, k;
+    for(k = 1; k < THEMES.length; k++) b.className = b.className.replace(new RegExp("(^|\\s)" + THEMES[k][0] + "(?=\\s|$)", "g"), " ").replace(/\s+/g, " ").replace(/^\s|\s$/g, "");
+    if(cls) b.className += (b.className ? " " : "") + cls;
+    var col = THEMES[0][2];
+    for(k = 0; k < THEMES.length; k++){ var on = THEMES[k][0] === cls; sws[k].className = "tsw" + (on ? " on" : ""); if(on) col = THEMES[k][2]; }
+    var m = document.querySelector('meta[name="theme-color"]'); if(m) m.setAttribute("content", col);
+  }
+  for(var i = 0; i < THEMES.length; i++) (function(t){
+    var b = document.createElement("button"); b.type = "button"; b.className = "tsw"; b.title = "ثيم " + t[1];
+    b.setAttribute("aria-label", "ثيم " + t[1]); b.style.background = t[3];
+    b.onclick = function(){ try{ beep(660, 40); }catch(e){} apply(t[0]); save("qz_theme", t[0]); };
+    sws.push(b); tb.appendChild(b);
+  })(THEMES[i]);
+  bar.appendChild(hb); bar.appendChild(tb);
+  w.insertBefore(bar, w.firstChild);
+  var saved = load("qz_theme", ""), okT = false;
+  for(var j = 0; j < THEMES.length; j++) if(THEMES[j][0] === saved) okT = true;
+  apply(okT ? saved : "");
+  var _show = show;
+  show = function(id){ cur = id; _show(id); };
+})();
 /* [إضافة v15 - صفحة تعلّم] نهاية */
 </script>
 </body>
